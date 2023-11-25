@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model User {
+  id       String   @id @default(uuid())
+  userName String   
+  email    String   @unique
+  avatar    String   
+  password String
+  isVerify Boolean  @default(false)
+  createdAt DateTime @default(now())
+  createClass Class?
+  joinClass UserClass[]
+  recievePost Post[] @relation(name:"receiver") 
+  writePost Post[] @relation(name:"author") 
+  writeComment Comment[] @relation(name:"commentAuthor") 
+  test Test[]
+}
+
+model Class {
+  id       String   @id @default(uuid())
+  className String   
+  createBy String  @unique
+  createdAt DateTime @default(now())
+  creator  User  @relation(fields: [createBy],references:[id])
+  haveStudent UserClass[]
+  post Post[]
+  gradePart GradePart[]
+  
+}
+
+model UserClass {
+  studentId String
+  courseId  String
+  organizeId String 
+  student   User  @relation(fields: [studentId], references: [id])
+  class    Class   @relation(fields: [courseId], references: [id])
+  role  Role @default( STUDENT)
+  @@id([studentId, courseId])
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+  OWNER
+}
+
+model GradePart {
+  id        String     @id @default(uuid())
+  name String
+  scale Float
+  classID  String 
+  class    Class   @relation(fields: [classID], references: [id])
+  testid Test[]
+}
+
+model Test {
+  id        String     @id @default(uuid())
+  name String
+  scale Float
+  point Float
+  gradePartId  String 
+  studentId String 
+  gradePart    GradePart   @relation(fields: [gradePartId], references: [id])
+  student    User   @relation(fields: [studentId], references: [id])
+}
+
+
+
+model Post {
+  id         Int        @id @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  title      String
+  content  String
+  published  Boolean    @default(false)
+  isPrivate Boolean
+  authorId   String
+  classId  String 
+  receiverId String
+  author     User       @relation(name: "author",fields: [authorId], references: [id])
+  receiver     User     @relation(name: "receiver",fields: [receiverId], references: [id])
+  class     Class       @relation(fields: [classId], references: [id])
+  comments Comment[] @relation(name:"commentPost") 
+}
+
+
+model Comment {
+  id         Int        @id @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  authorId   String
+  content  String
+  postId  Int
+  author     User       @relation(name: "commentAuthor",fields: [authorId], references: [id])
+  postComment    Post       @relation(name: "commentPost",fields: [postId], references: [id])
+}

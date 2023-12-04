@@ -20,7 +20,7 @@ app.use(
     secret: "cats",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true, sameSite: "None" },
+    cookie: { secure: true, sameSite: "none" },
   })
 );
 app.use(passport.initialize());

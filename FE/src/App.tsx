@@ -28,7 +28,7 @@ function App() {
     try {
       console.log("lmaoodofod");
       const res = await api.get("user/auth/autologin");
-
+      console.log(res);
       if (res.data.success) {
         dispatch(loginSetState());
       } else {

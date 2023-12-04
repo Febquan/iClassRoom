@@ -25,6 +25,7 @@ passport.use(
               email: profile.email,
               password: hashedPassword,
               avatar: profile.picture,
+              isOauth: true,
               isVerify: true,
             },
           });

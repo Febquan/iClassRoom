@@ -56,4 +56,21 @@
   body {
     @apply bg-background text-foreground;
   }
+  .my-content-tiptap h1 {
+    @apply scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl;
+  }
+  .my-content-tiptap h3 {
+    @apply scroll-m-20 text-2xl font-extrabold tracking-tight lg:text-3xl;
+  }
+  .my-content-tiptap blockquote {
+    @apply border-l-2 pl-6 italic;
+  }
+  .my-content-tiptap ul,
+  ol {
+    list-style: revert;
+  }
+  .my-content-tiptap ul,
+  ol > li {
+    @apply ml-5;
+  }
 }

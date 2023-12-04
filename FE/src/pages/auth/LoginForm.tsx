@@ -1,6 +1,6 @@
 import api from "./../../axios/axios.js";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import Spinner from "@/components/ui/spinner.js";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Facebook, MailIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
+
 import {
   Card,
   CardContent,
@@ -16,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
+import { ForgetPasswordModal } from "./ForgetPasswordModal.js";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -36,7 +37,7 @@ type SchemaType = z.infer<typeof Schema>;
 export default function LoginForm() {
   const [isLoading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const [errorMess, setErrorMess] = useState(null);
+  const [errorMess, setErrorMess] = useState<string | undefined>();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const {
@@ -46,42 +47,41 @@ export default function LoginForm() {
   } = useForm<SchemaType>({
     resolver: zodResolver(Schema), // Hook up zodResolver
   });
-
+  const fetchUserInfo = async (data: SchemaType) => {
+    const res = await api.post(
+      "/user/auth/login",
+      {
+        email: data.email,
+        password: data.password,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+    if (res.data.success == true) {
+      return res.data.userInfo;
+    } else {
+      return null;
+    }
+  };
   const onLoginSubmit = async (data: SchemaType) => {
     console.log(data);
     try {
       setLoading(true);
-      const fetchUserInfo = async () => {
-        const res = await api.post(
-          "/user/auth/login",
-          {
-            email: data.email,
-            password: data.password,
-          },
-          {
-            withCredentials: true,
-          }
-        );
-        if (res.data.success == true) {
-          return res.data.userInfo;
-        }
-      };
+
       await queryClient.fetchQuery({
         queryKey: ["userInfo"],
-        queryFn: fetchUserInfo,
+        queryFn: () => fetchUserInfo(data),
       });
       dispatch(loginSetState());
       setLoading(false);
       // dispatch(setUserInFo(res.data.userInfo));
       navigate("/Home");
-    } catch (err: unknown | Error | AxiosError) {
-      if (axios.isAxiosError(err)) {
-        console.log(err);
-        setLoading(false);
-        setErrorMess(err.response?.data.error);
-      } else {
-        // Just a stock error
-      }
+    } catch (error) {
+      const err = error as AxiosError<{ success: boolean; error: string }>;
+      console.log(err);
+      setLoading(false);
+      setErrorMess(err.response?.data.error);
     }
   };
   const onEmailLogin = () => {
@@ -152,7 +152,10 @@ export default function LoginForm() {
               {errorMess}
             </span>
           )}
+
+          <ForgetPasswordModal></ForgetPasswordModal>
         </CardContent>
+
         <CardFooter className="flex justify-center items-center w-full ">
           <Button className="w-full" type="submit" form="loginform">
             {isLoading ? <Spinner /> : "Login"}

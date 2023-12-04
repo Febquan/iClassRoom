@@ -17,8 +17,7 @@ async function signupController(req, res) {
 async function autoLoginController(req, res) {
   try {
     const user = req.user || req.session.user;
-    console.log(req.user, req.session.user, "aloalo");
-    // console.log("sdsdsds", req.user, req.session.user);
+
     if (!user) {
       res.json({
         success: false,
@@ -28,9 +27,11 @@ async function autoLoginController(req, res) {
       res.json({
         success: true,
         userInfo: {
+          userId: user.id,
           userName: user.userName,
           email: user.email,
           avatar: user.avatar,
+          isOauth: user.isOauth,
         },
       });
     }
@@ -86,28 +87,10 @@ const verify = async (req, res, next) => {
 };
 async function changePasswordController(req, res) {
   const { oldPassword, newPassword } = req.body;
+  const userSession = req.user || req.session.user;
+  console.log(req.body, userSession.userId);
   try {
-    const user = await prisma.user.findUnique({
-      where: {
-        id: req.user.userId,
-      },
-    });
-    if (!user) {
-      throw new Error("Cant not indentify your account");
-    }
-    const passwordMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!passwordMatch) {
-      throw new Error("Wrong old password !");
-    }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({
-      where: {
-        id: req.user.userId,
-      },
-      data: {
-        password: hashedPassword,
-      },
-    });
+    await changePassword(oldPassword, newPassword, userSession.userId);
     res.json({
       success: true,
     });
@@ -168,18 +151,106 @@ async function login(email, password) {
   }
 
   const userInfo = {
+    userId: user.id,
     userName: user.userName,
     email: user.email,
     avatar: user.avatar,
+    isOauth: user.isOauth,
   };
   return { userInfo };
 }
+
+async function changePassword(oldPassword, newPassword, userId) {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  if (!user) {
+    throw new Error("Cant not indentify your account");
+  }
+  const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!passwordMatch) {
+    throw new Error("Wrong old password !");
+  }
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+}
+
+async function sendEmailChangePasswordController(req, res) {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+    if (!user) {
+      throw new Error("Email is not registered !");
+    }
+    if (user.isOauth) {
+      throw new Error("Email is provided by other service !");
+    }
+    const token = await jwt.sign(
+      {
+        email,
+      },
+      process.env.TOKEN_PRIVATE_KEY,
+      { expiresIn: "8h" }
+    );
+    myMailer(
+      email,
+      "ClassRoom change your password",
+      `<h2>Xin vui lòng click vào <a href="${process.env.FRONTEND_URL}/emailChangePassword/${token}">đường link này</a> để đổi mật khẩu của bạn</h2>
+      <p>Đường link trên sẽ hết hạn sau 8 giờ kể từ khi gửi</p>
+      `
+    );
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function changePasswordEmailController(req, res) {
+  const { oldPassword, newPassword } = req.body;
+  const emailToken = req.params.emailToken;
+  try {
+    const { email } = await jwt.verify(
+      emailToken,
+      process.env.TOKEN_PRIVATE_KEY
+    );
+    console.log(emailToken, email);
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+    await changePassword(oldPassword, newPassword, user.id);
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   signupController,
   loginController,
   autoLoginController,
   LogOutController,
   changePasswordController,
+  changePasswordEmailController,
   verify,
   signUp,
+  sendEmailChangePasswordController,
 };

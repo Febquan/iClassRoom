@@ -7,7 +7,9 @@ const {
   LogOutController,
   changeInfoController,
   changePasswordController,
+  changePasswordEmailController,
   verify,
+  sendEmailChangePasswordController,
 } = require("../controller/userAuthController");
 const authMiddleware = require("./../middleware/authMiddleware");
 const router = express.Router();
@@ -38,6 +40,9 @@ router.post("/logout", LogOutController);
 router.post("/changepass", authMiddleware, changePasswordController);
 router.get("/autologin", autoLoginController);
 router.get("/verify", verify);
+router.post("/sendEmailChangePassword", sendEmailChangePasswordController);
+router.post("/changePasswordEmail/:emailToken", changePasswordEmailController);
+
 // router.post("/changeinfo", authMiddleware, changeInfoController);
 
 module.exports = router;

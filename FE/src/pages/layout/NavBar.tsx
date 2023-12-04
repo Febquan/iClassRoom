@@ -21,17 +21,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Data = {
-  email: number;
-  userName: string;
-  avatar: string;
-};
+import { UserInfo } from "@/ultis/appType";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function NavBar({ className }: { className: string }) {
-  const { data } = useQuery<Data | undefined>({ queryKey: ["userInfo"] });
+  const { data } = useQuery<UserInfo | undefined>({ queryKey: ["userInfo"] });
   const isLogin = useSelector((state: RootState) => state.auth.isLogin);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const handleOpen = () => {
     dispatch(toggleSideBar());
   };
@@ -41,6 +39,11 @@ export default function NavBar({ className }: { className: string }) {
       dispatch(logoutSetState());
       navigate("/login");
     } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem with your request.",
+      });
       console.log(err);
     }
   };
@@ -69,7 +72,7 @@ export default function NavBar({ className }: { className: string }) {
                   <div className="flex gap-2 items-center ">
                     <Avatar className="h-[40px] w-[42px]">
                       <AvatarImage src={data?.avatar} alt="@shadcn" />
-                      <AvatarFallback>AVA</AvatarFallback>
+                      <AvatarFallback>{data?.userName[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
                       <span className="text-[0.8rem] font-medium leading-non">

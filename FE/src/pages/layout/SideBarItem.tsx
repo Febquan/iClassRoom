@@ -7,25 +7,29 @@ export default function SidebarItem({
   text,
   active,
   alert,
+  ...rest
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
   text: string;
   active: boolean;
   alert: boolean;
-}) {
+} & React.HTMLProps<HTMLLIElement>) {
   const isOpen = useSelector((state: RootState) => state.sideBar.isOpen);
   const isOpenHover = useSelector(
     (state: RootState) => state.sideBar.isOpenHover
   );
-  console.log(isOpen, "kkkkk");
+
   return (
     <li
+      {...rest}
       className={`
+      ${rest.className}
         relative flex items-center py-2 px-5 my-1
         font-medium rounded-md cursor-pointer
         transition-colors group 
         hover:bg-accent hover:text-accent-foreground
-        ${active ? "" : ""}
+       w-full
+        ${active ? "bg-card" : ""}
     `}
     >
       <div>{icon}</div>
@@ -39,7 +43,7 @@ export default function SidebarItem({
       {alert && (
         <div
           className={`absolute right-2 w-2 h-2 rounded bg-red-500   ${
-            isOpen || isOpenHover ? "" : "top-[4px] right-[6px]"
+            isOpen || isOpenHover ? "" : "top-[4px] right-[25px]"
           }`}
         />
       )}

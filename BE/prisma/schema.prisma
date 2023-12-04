@@ -7,8 +7,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
-  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  // url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  // directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  url= env("DATABASE_URL")
 }
 
 model User {
@@ -18,8 +19,9 @@ model User {
   avatar    String   
   password String
   isVerify Boolean  @default(false)
+  isOauth Boolean @default(false)
   createdAt DateTime @default(now())
-  createClass Class?
+  createClass Class[]
   joinClass UserClass[]
   recievePost Post[] @relation(name:"receiver") 
   writePost Post[] @relation(name:"author") 
@@ -30,7 +32,7 @@ model User {
 model Class {
   id       String   @id @default(uuid())
   className String   
-  createBy String  @unique
+  createBy String  
   createdAt DateTime @default(now())
   creator  User  @relation(fields: [createBy],references:[id])
   haveStudent UserClass[]
@@ -40,19 +42,18 @@ model Class {
 }
 
 model UserClass {
-  studentId String
+  userId String
   courseId  String
-  organizeId String 
-  student   User  @relation(fields: [studentId], references: [id])
+  organizeId String? 
+  student   User  @relation(fields: [userId], references: [id])
   class    Class   @relation(fields: [courseId], references: [id])
-  role  Role @default( STUDENT)
-  @@id([studentId, courseId])
+  role  Role @default(student)
+  @@id([userId, courseId])
 }
 
 enum Role {
-  TEACHER
-  STUDENT
-  OWNER
+  teacher
+  student
 }
 
 model GradePart {

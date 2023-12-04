@@ -27,7 +27,6 @@ const Schema = z
   .object({
     newPassword: z.string().min(6),
     confirmPassword: z.string().min(6),
-    oldPassword: z.string().min(1, { message: "Emty field" }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords don't match",
@@ -70,7 +69,6 @@ export default function EmailVerify() {
     console.log(formData);
     await mutate({
       newPassword: formData.newPassword,
-      oldPassword: formData.oldPassword,
     });
   };
   return (
@@ -112,21 +110,7 @@ export default function EmailVerify() {
               </FormItem>
             )}
           />
-          <FormField
-            disabled={isOauth}
-            control={form.control}
-            name="oldPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Old password</FormLabel>
-                <FormControl>
-                  <Input {...field} type="password" defaultValue={""} />
-                </FormControl>
-                <FormDescription>Enter your old password</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
           {errorMess && (
             <span className="text-red-500 text-center w-full block ">
               {errorMess}

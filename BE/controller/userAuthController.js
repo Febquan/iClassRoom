@@ -184,6 +184,26 @@ async function changePassword(oldPassword, newPassword, userId) {
   });
 }
 
+async function changeForgotPassword(newPassword, userId) {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  if (!user) {
+    throw new Error("Cant not indentify your account");
+  }
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+}
+
 async function sendEmailChangePasswordController(req, res) {
   try {
     const { email } = req.body;
@@ -221,7 +241,7 @@ async function sendEmailChangePasswordController(req, res) {
 }
 
 async function changePasswordEmailController(req, res) {
-  const { oldPassword, newPassword } = req.body;
+  const { newPassword } = req.body;
   const emailToken = req.params.emailToken;
   try {
     const { email } = await jwt.verify(
@@ -234,7 +254,7 @@ async function changePasswordEmailController(req, res) {
         email: email,
       },
     });
-    await changePassword(oldPassword, newPassword, user.id);
+    await changeForgotPassword(newPassword, user.id);
     res.json({
       success: true,
     });

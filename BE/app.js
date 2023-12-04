@@ -15,6 +15,8 @@ const port = process.env.PORT;
 
 require("./utils/faceBookAuth.js");
 require("./utils/googleAuth.js");
+app.enable("trust proxy");
+app.use(cookieParser());
 app.use(
   session({
     secret: "cats",
@@ -25,7 +27,6 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(cookieParser());
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,

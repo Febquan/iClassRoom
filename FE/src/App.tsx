@@ -26,6 +26,7 @@ function App() {
 
   const autoLogin = async () => {
     try {
+      console.log("lmaoodofod");
       const res = await api.get("user/auth/autologin");
 
       if (res.data.success) {

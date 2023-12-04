@@ -25,7 +25,10 @@ import { UserInfo } from "@/ultis/appType";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function NavBar({ className }: { className: string }) {
-  const { data } = useQuery<UserInfo | undefined>({ queryKey: ["userInfo"] });
+  const { data } = useQuery<UserInfo | undefined>({
+    queryKey: ["userInfo"],
+    refetchOnWindowFocus: false,
+  });
   const isLogin = useSelector((state: RootState) => state.auth.isLogin);
   const dispatch = useDispatch();
   const navigate = useNavigate();

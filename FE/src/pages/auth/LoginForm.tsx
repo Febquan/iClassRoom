@@ -1,6 +1,5 @@
 import api from "./../../axios/axios.js";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AxiosError } from "axios";
 import Spinner from "@/components/ui/spinner.js";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ import { z } from "zod";
 import { useDispatch } from "react-redux";
 import { loginSetState } from "../../store/authSlice";
 import { useQueryClient } from "@tanstack/react-query";
+import { MyError } from "@/ultis/appType.js";
 
 const Schema = z.object({
   email: z.string().email(),

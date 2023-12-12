@@ -20,7 +20,7 @@ export default function PersonDisplay({
   i: string;
   personInfo: Student;
   role: string;
-  isEdit: boolean;
+  isEdit?: boolean;
   changeRole?: (userId: string, role: Role) => void;
   isChange?: boolean;
 }) {

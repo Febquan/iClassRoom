@@ -18,7 +18,12 @@ import { MyError } from "@/ultis/appType";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useGetClassId, useGetUserInfo } from "../customhook/classCustomHooks";
+import {
+  useGetClassId,
+  useGetUserInfo,
+  useIsOwner,
+} from "../customhook/classCustomHooks";
+import { useNavigate } from "react-router-dom";
 
 const CONFIRM_LEAVE_CLASS_TEXT = "Leave class";
 const Schema = z
@@ -32,6 +37,8 @@ const Schema = z
 type SchemaType = z.infer<typeof Schema>;
 
 export default function LeaveClassForm() {
+  const navigate = useNavigate();
+  const isOwner = useIsOwner();
   const { toast } = useToast();
   const form = useForm<SchemaType>({
     resolver: zodResolver(Schema),
@@ -50,8 +57,9 @@ export default function LeaveClassForm() {
     mutationFn: LeaveClassMutate,
     onSuccess: () => {
       toast({
-        title: "Password changed.",
+        title: "Leave class success.",
       });
+      navigate("/classes");
     },
     onError: (error) => {
       const err = error as MyError;
@@ -78,7 +86,11 @@ export default function LeaveClassForm() {
             <FormItem>
               <FormLabel>Confirm text </FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Leave class" />
+                <Input
+                  {...field}
+                  placeholder="Leave class"
+                  disabled={isOwner}
+                />
               </FormControl>
               <FormDescription>{`Type "${CONFIRM_LEAVE_CLASS_TEXT}" to confirm your action`}</FormDescription>
               <FormMessage />
@@ -95,8 +107,15 @@ export default function LeaveClassForm() {
           type="submit"
           variant="destructive"
           className="w-full  font-bold"
+          disabled={isOwner}
         >
-          {isPending ? <Spinner /> : "Leave"}
+          {isOwner ? (
+            "Can not leave if you are the class owner"
+          ) : isPending ? (
+            <Spinner />
+          ) : (
+            "Leave"
+          )}
         </Button>
       </form>
     </Form>

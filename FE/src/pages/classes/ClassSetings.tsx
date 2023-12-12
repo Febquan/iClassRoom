@@ -6,14 +6,14 @@ export default function ClassSetings() {
   const isOwner = useIsOwner();
   return (
     <div className=" flex flex-col gap-6">
-      <MySection title="Manage class role">
-        <ManageClassRole></ManageClassRole>
-      </MySection>
       {isOwner && (
-        <MySection title="Leave Class">
-          <LeaveClassForm></LeaveClassForm>
+        <MySection title="Manage class role">
+          <ManageClassRole></ManageClassRole>
         </MySection>
       )}
+      <MySection title="Leave Class">
+        <LeaveClassForm></LeaveClassForm>
+      </MySection>
     </div>
   );
 }

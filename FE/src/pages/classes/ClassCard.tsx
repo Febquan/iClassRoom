@@ -49,7 +49,7 @@ export default function ClassCard({
   };
   return (
     <Card
-      className={`hover:scale-[1.08]  transition-transform  ${className} h-[15rem]`}
+      className={`hover:scale-[1.08]  transition-transform  ${className} h-fit`}
       ref={setNodeRef}
       style={style}
       {...attributes}

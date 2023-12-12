@@ -86,11 +86,12 @@ model Post {
   content  String
   published  Boolean    @default(false)
   isPrivate Boolean
+  fileKeys  String[] 
   authorId   String
   classId  String 
-  receiverId String
+  receiverId String?
   author     User       @relation(name: "author",fields: [authorId], references: [id])
-  receiver     User     @relation(name: "receiver",fields: [receiverId], references: [id])
+  receiver     User?     @relation(name: "receiver",fields: [receiverId], references: [id])
   class     Class       @relation(fields: [classId], references: [id])
   comments Comment[] @relation(name:"commentPost") 
 }

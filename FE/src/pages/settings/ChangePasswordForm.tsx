@@ -16,10 +16,11 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { UserInfo } from "@/ultis/appType";
+
 import { useState } from "react";
-import { AxiosError } from "axios";
+import { MyError } from "@/ultis/appType";
+import { useGetUserInfo } from "../customhook/classCustomHooks";
+import { useMutation } from "@tanstack/react-query";
 
 const Schema = z
   .object({
@@ -51,13 +52,11 @@ export default function ChangePasswordForm() {
       });
     },
     onError: (error) => {
-      const err = error as AxiosError<{ success: boolean; error: string }>;
+      const err = error as MyError;
       setErrorMess(err.response?.data.error);
     },
   });
-  const { data: userInfo } = useQuery<UserInfo | undefined>({
-    queryKey: ["userInfo"],
-  });
+  const { userInfo } = useGetUserInfo();
   const isOauth = userInfo?.isOauth;
   const onChangePassword = async (formData: SchemaType) => {
     console.log(formData);

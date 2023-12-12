@@ -37,9 +37,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserInfo } from "@/ultis/appType";
+import { ROLE, UserInfo } from "@/ultis/appType";
 
-const ROLE = ["teacher", "student"] as const;
 const Schema = z
   .object({
     className: z
@@ -84,7 +83,7 @@ export default function CreateCard() {
         title: "Class created !",
       });
     },
-    onError: ( ) => {
+    onError: () => {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",

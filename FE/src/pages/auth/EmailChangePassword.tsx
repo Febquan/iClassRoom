@@ -16,12 +16,13 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { UserInfo } from "@/ultis/appType";
+import { useMutation } from "@tanstack/react-query";
+
 import { useState } from "react";
-import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
+import { useGetUserInfo } from "../customhook/classCustomHooks";
+import { MyError } from "@/ultis/appType";
 
 const Schema = z
   .object({
@@ -57,13 +58,11 @@ export default function EmailVerify() {
       navigate("/login");
     },
     onError: (error) => {
-      const err = error as AxiosError<{ success: boolean; error: string }>;
+      const err = error as MyError;
       setErrorMess(err.response?.data.error);
     },
   });
-  const { data: userInfo } = useQuery<UserInfo | undefined>({
-    queryKey: ["userInfo"],
-  });
+  const { userInfo } = useGetUserInfo();
   const isOauth = userInfo?.isOauth;
   const onChangePassword = async (formData: SchemaType) => {
     console.log(formData);

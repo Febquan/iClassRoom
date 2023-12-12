@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AxiosError } from "axios";
+import { MyError } from "@/ultis/appType";
 
 import Spinner from "@/components/ui/spinner";
 import { useState } from "react";
@@ -49,7 +49,7 @@ export function ForgetPasswordModal() {
       navigate(`/emailChangeSent/${email}`);
     } catch (error) {
       console.log(error);
-      const err = error as AxiosError<{ success: boolean; error: string }>;
+      const err = error as MyError;
       setErrorMess(err.response?.data.error);
       setisLoading(false);
     }

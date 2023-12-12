@@ -1,6 +1,5 @@
 import ClassCard from "./ClassCard";
 import PageSetting from "../layout/PageSetting";
-import api from "@/axios/axios";
 import {
   closestCenter,
   DndContext,
@@ -22,37 +21,13 @@ import { SearchBar } from "@/components/ui/search";
 // import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import CreateCard from "./CreateCard";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserInfo } from "@/ultis/appType";
-import { useToast } from "@/components/ui/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
-type Student = {
-  avatar: string;
-  email: string;
-  userName: string;
-};
-type ClassToStudent = {
-  courseId: string;
-  organizeId: string;
-  role: "student" | "teacher";
-  userId: string;
-  student: Student;
-};
-export type Class = {
-  id: string;
-  className: string;
-  createBy: string;
-  createdAt: string;
-  haveStudent: ClassToStudent[];
-};
-export type userToClass = {
-  id: string;
-  class: Class;
-  courseId: string;
-  organizeId: string;
-  role: "student" | "teacher";
-  userId: string;
-};
+import {
+  useGetAllUSerClass,
+  useGetUserInfo,
+} from "../customhook/classCustomHooks";
+import { userToClass } from "@/ultis/appType";
 
 export default function ClassPage() {
   const [activeElement, setActiveElement] = useState<userToClass>();
@@ -89,31 +64,8 @@ export default function ClassPage() {
     }
     setActiveElement(undefined);
   }
-  const { toast } = useToast();
-  const { data: userInfo } = useQuery<UserInfo | undefined>({
-    queryKey: ["userInfo"],
-  });
-  const fetchAllClass = async () => {
-    try {
-      const res = await api.get(`user/class/getAllClass/${userInfo?.userId}`);
-      const addedIndexClasses = res.data.classes.map((el: userToClass) => {
-        return { ...el, id: el.courseId };
-      });
-      return addedIndexClasses;
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
-      });
-      console.log(err);
-    }
-  };
-  const { data: classes, isSuccess } = useQuery<userToClass[] | undefined>({
-    queryKey: ["userClasses"],
-    queryFn: fetchAllClass,
-    staleTime: Infinity,
-  });
+  const { userInfo } = useGetUserInfo();
+  const { classes, isSuccess } = useGetAllUSerClass(userInfo!.userId);
   // console.log(classes?.[0].courseId);
   return (
     <PageSetting>

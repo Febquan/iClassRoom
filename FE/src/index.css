@@ -50,6 +50,8 @@
 }
 
 @layer base {
+  /* Firefox */
+
   * {
     @apply border-border;
   }

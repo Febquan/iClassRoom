@@ -2,19 +2,18 @@ import { useNavigate } from "react-router-dom";
 import api from "@/axios/axios";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { UserInfo } from "@/ultis/appType";
+
+import { Class } from "@/ultis/appType";
 import { useCallback, useEffect, useState } from "react";
-import { Class } from "./ClassPage";
+
 import { useToast } from "@/components/ui/use-toast";
+import { useGetUserInfo } from "../customhook/classCustomHooks";
 
 export default function AcceptInvite() {
   const { hashedClassId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: userInfo } = useQuery<UserInfo | undefined>({
-    queryKey: ["userInfo"],
-  });
+  const { userInfo } = useGetUserInfo();
   const [classInfo, setClassInfo] = useState<
     Class & { role: "teacher" | "student" }
   >();

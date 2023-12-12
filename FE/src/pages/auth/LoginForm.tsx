@@ -76,9 +76,9 @@ export default function LoginForm() {
       dispatch(loginSetState());
       setLoading(false);
       // dispatch(setUserInFo(res.data.userInfo));
-      navigate("/Home");
+      navigate("/home");
     } catch (error) {
-      const err = error as AxiosError<{ success: boolean; error: string }>;
+      const err = error as MyError;
       console.log(err);
       setLoading(false);
       setErrorMess(err.response?.data.error);

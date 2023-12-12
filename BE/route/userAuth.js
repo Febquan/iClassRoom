@@ -22,7 +22,7 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    successRedirect: process.env.FRONTEND_URL + "/home",
+    successRedirect: process.env.FRONTEND_URL + "/",
     failureRedirect: process.env.FRONTEND_URL + "/unauthorized",
   })
 );
@@ -31,7 +31,7 @@ router.get("/facebook", passport.authenticate("facebook"));
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
-    successRedirect: process.env.FRONTEND_URL + "/home",
+    successRedirect: process.env.FRONTEND_URL + "/",
     failureRedirect: process.env.FRONTEND_URL + "/unauthorized",
   })
 );

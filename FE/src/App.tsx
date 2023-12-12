@@ -23,12 +23,15 @@ function App() {
   const { toast } = useToast();
   const [checkAutologin, setCheckAutoLogin] = useState<boolean>(false);
   const dispatch = useDispatch();
+  useEffect(() => {
+    if (window.location.href == `${import.meta.env.VITE_FRONT_END_URL}`) return;
+    localStorage.setItem("initUrl", window.location.href);
+  }, []);
 
   const autoLogin = async () => {
     try {
-      console.log("lmaoodofod");
       const res = await api.get("user/auth/autologin");
-      console.log(res);
+
       if (res.data.success) {
         dispatch(loginSetState());
       } else {
@@ -64,8 +67,8 @@ function App() {
             <Routes>
               <Route path="/login" element={<Auth />} />
               <Route element={<PrivateRoute />}>
-                <Route element={<Home />} path="/home" />
-                <Route element={<Home />} path="/" />
+                {/* <Route element={<Home />} path="/home" /> */}
+                <Route element={<Home />} path="" />
                 <Route element={<ClassPage />} path="/classes" />
                 <Route
                   element={<AcceptInvite />}

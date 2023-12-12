@@ -2,7 +2,7 @@ import { useUserClassClassify } from "../customhook/classCustomHooks";
 import { Separator } from "@/components/ui/separator";
 
 import PersonDisplay from "./PersonDisplay";
-export default function ClassRosters({ isEdit }: { isEdit: boolean }) {
+export default function ClassRosters({ isEdit }: { isEdit?: boolean }) {
   const { teachers, students, classOwner } = useUserClassClassify();
 
   return (

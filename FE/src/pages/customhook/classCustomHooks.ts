@@ -59,6 +59,7 @@ export const useUserClassClassify = () => {
   const initClassClassify: ClassToStudent[] = JSON.parse(
     JSON.stringify(classInfo?.haveStudent)
   );
+  console.log(initClassClassify, "xxxx");
   const [userInClass, setUserInclass] = useState<ClassToStudent[] | undefined>(
     initClassClassify
   );
@@ -77,16 +78,25 @@ export const useUserClassClassify = () => {
     setUserInclass([...copy]);
   };
 
-  const getChangeUsers = (): { userId: string; newRole: Role }[] => {
+  const getChangeUsers = (): {
+    userId: string;
+    newRole: Role;
+  }[] => {
     const changedUser = [];
-    for (const [index, user] of initClassClassify.entries()) {
-      if (user.role !== userInClass![index].role) {
+
+    for (const user of initClassClassify) {
+      const afterRole = userInClass?.find(
+        (el) => el.userId == user.userId
+      )?.role;
+      const initRole = user.role;
+      if (initRole != afterRole) {
         changedUser.push({
           userId: user.userId,
-          newRole: userInClass![index].role,
+          newRole: afterRole!,
         });
       }
     }
+
     return changedUser;
   };
 

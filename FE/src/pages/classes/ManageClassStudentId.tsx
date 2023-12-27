@@ -1,36 +1,35 @@
-import { Separator } from "@/components/ui/separator";
-import PersonDisplayEditRole from "./PersonDisplayEditRole";
-
 import {
   useGetClassId,
-  useUserClassClassify,
+  useUserStudentClassId,
 } from "../customhook/classCustomHooks";
 import { Button } from "@/components/ui/button";
 import api from "@/axios/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MyError, Role } from "@/ultis/appType";
+import { MyError } from "@/ultis/appType";
 import Spinner from "@/components/ui/spinner";
 import FormError from "./FormError";
 import { useState } from "react";
+import PersonDisplayEditStudentId from "./PersonDisplayEditStudentId";
 
-export default function ManageClassRole() {
-  const { teachers, students, classOwner, changeRole, getChangeUsers } =
-    useUserClassClassify();
+export default function ManageClassStudentId() {
+  const { students, changeStudentId, getChangeUsers, getErrorUser } =
+    useUserStudentClassId();
   const queryClient = useQueryClient();
   const [errorMess, setErrorMess] = useState<string>();
   const classId = useGetClassId();
   const changedInfo = getChangeUsers();
+  const errorUsers = getErrorUser();
   const changedUsers = changedInfo.map((el) => el.userId);
-  const RoleChange = async (
+  const studentIdChange = async (
     changedInfo: {
       userId: string;
-      newRole: Role;
+      newStudentId: string;
     }[]
   ) => {
-    await api.post("user/class/changeUserRole", { changedInfo, classId });
+    await api.post("user/class/changeStudentId", { changedInfo, classId });
   };
   const { mutate, isPending } = useMutation({
-    mutationFn: RoleChange,
+    mutationFn: studentIdChange,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`Class-${classId}`] });
     },
@@ -40,48 +39,31 @@ export default function ManageClassRole() {
       console.log(err.response?.data.error);
     },
   });
-  const onRoleChange = () => {
+
+  const onStudentIdChange = () => {
     mutate(changedInfo);
   };
+
   return (
     <div className=" w-full flex flex-col gap-5">
       <ul className=" w-full flex-col flex gap-5">
-        {classOwner?.map((el, i) => (
-          <PersonDisplayEditRole
-            i={`${el.student.email}${i}`}
-            personInfo={el}
-            isClassOwner={true}
-            changeRole={changeRole}
-          ></PersonDisplayEditRole>
-        ))}
-      </ul>
-      <Separator></Separator>
-      <ul className=" w-full flex-col flex gap-5">
-        {teachers?.map((el, i) => (
-          <PersonDisplayEditRole
-            i={`${el.student.email}${i}`}
-            personInfo={el}
-            changeRole={changeRole}
-            isChange={changedUsers.includes(el.userId)}
-          ></PersonDisplayEditRole>
-        ))}
-      </ul>
-      <Separator></Separator>
-      <ul className=" w-full flex-col flex gap-5">
         {students?.map((el, i) => (
-          <PersonDisplayEditRole
+          <PersonDisplayEditStudentId
             i={`${el.student.email}${i}`}
             personInfo={el}
-            changeRole={changeRole}
+            changeStudentId={changeStudentId}
             isChange={changedUsers.includes(el.userId)}
-          ></PersonDisplayEditRole>
+            ErrorMes={
+              errorUsers.find((user) => user.userId === el.userId)?.errorMes
+            }
+          ></PersonDisplayEditStudentId>
         ))}
       </ul>
       {errorMess && <FormError>{errorMess}</FormError>}
       <Button
         className="mt-3"
-        onClick={onRoleChange}
-        disabled={changedUsers.length == 0}
+        onClick={onStudentIdChange}
+        disabled={!(errorUsers.length == 0) || changedInfo.length == 0}
       >
         {isPending ? <Spinner></Spinner> : "Change"}
       </Button>

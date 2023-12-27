@@ -26,21 +26,22 @@ model User {
   recievePost Post[] @relation(name:"receiver") 
   writePost Post[] @relation(name:"author") 
   writeComment Comment[] @relation(name:"commentAuthor") 
-  test Test[]
+  doTest DoTest[]
 }
+
 
 model Class {
   id       String   @id @default(uuid())
   className String   
   createBy String  
   createdAt DateTime @default(now())
+  studentExtraInfo Json?
   creator  User  @relation(fields: [createBy],references:[id])
   haveStudent UserClass[]
   post Post[]
   gradePart GradePart[]
   
 }
-
 model UserClass {
   userId String
   courseId  String
@@ -61,19 +62,31 @@ model GradePart {
   name String
   scale Float
   classID  String 
+  sort Int?
   class    Class   @relation(fields: [classID], references: [id])
   testid Test[]
+}
+
+model DoTest{
+  testId  String 
+  studentId String 
+  point Float?
+  fileKeys  String[] 
+  pendingGradeReview Boolean @default(false)
+  student    User   @relation(fields: [studentId], references: [id])
+  test Test   @relation(fields: [testId], references: [id])
+  @@id([studentId, testId])
 }
 
 model Test {
   id        String     @id @default(uuid())
   name String
   scale Float
-  point Float
   gradePartId  String 
-  studentId String 
+  sort Int?
+  isFinalize Boolean @default(false)
   gradePart    GradePart   @relation(fields: [gradePartId], references: [id])
-  student    User   @relation(fields: [studentId], references: [id])
+  doTest DoTest[]
 }
 
 

@@ -14,18 +14,24 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { loginSetState } from "./store/authSlice.js";
 import AcceptInvite from "./pages/classes/AcceptInvite.js";
-import { useToast } from "@/components/ui/use-toast";
+// import { useToast } from "@/components/ui/use-toast";
 import AccountSetting from "./pages/settings/AccountSetting.js";
 import { UserInfo } from "./ultis/appType.js";
 import EmailChangePassword from "./pages/auth/EmailChangePassword.js";
 import EmailChangeSent from "./pages/other/EmailChangeSent.js";
 function App() {
-  const { toast } = useToast();
+  // const { toast } = useToast();
+
   const [checkAutologin, setCheckAutoLogin] = useState<boolean>(false);
   const dispatch = useDispatch();
   useEffect(() => {
-    if (window.location.href == `${import.meta.env.VITE_FRONT_END_URL}`) return;
+    if (window.location.href == `${import.meta.env.VITE_FRONT_END_URL}`) {
+      return;
+    }
     localStorage.setItem("initUrl", window.location.href);
+    setTimeout(() => {
+      localStorage.removeItem("initUrl");
+    }, 2000);
   }, []);
 
   const autoLogin = async () => {
@@ -34,16 +40,12 @@ function App() {
 
       if (res.data.success) {
         dispatch(loginSetState());
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Cant auto login.",
-          description: "Your session has expired, please login. ",
-        });
       }
       return res.data.userInfo;
     } catch (err) {
-      console.log(err);
+      window.location.href = `${
+        import.meta.env.VITE_FRONT_END_URL
+      }unauthorized`;
     }
   };
   const { isSuccess } = useQuery<UserInfo | undefined>({
@@ -74,7 +76,10 @@ function App() {
                   element={<AcceptInvite />}
                   path="/classes/acceptinvite/:hashedClassId"
                 />
-                <Route element={<SpecificClass />} path="/classes/:classId" />
+                <Route
+                  element={<SpecificClass />}
+                  path="/classes/:classId/:tabPage"
+                />
                 <Route element={<AccountSetting />} path="/settings/account" />
               </Route>
 

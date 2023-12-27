@@ -4,7 +4,7 @@ export interface SidebarInfo {
   isOpenHover: boolean;
 }
 const initialState: SidebarInfo = {
-  isOpen: true,
+  isOpen: false,
   isOpenHover: false,
 };
 

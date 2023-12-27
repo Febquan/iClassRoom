@@ -3,7 +3,7 @@ function authMiddleware(req, res, next) {
   if (!isAuthozized) {
     const error = new Error("Unauthorized");
     error.statusCode = 401;
-    throw error;
+    return next(error);
   }
   next();
 }

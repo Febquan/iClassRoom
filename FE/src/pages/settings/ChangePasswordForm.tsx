@@ -70,7 +70,7 @@ export default function ChangePasswordForm() {
       <form
         onSubmit={form.handleSubmit(onChangePassword)}
         className="space-y-3"
-        id="classCreate"
+        id="changePas"
       >
         <FormField
           disabled={isOauth}

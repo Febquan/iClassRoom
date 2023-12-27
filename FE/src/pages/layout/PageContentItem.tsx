@@ -9,5 +9,13 @@ export default function PageContentItem({
   children: ReactNode;
 }) {
   const pageContext = useContext(PageContext);
-  return <>{pageContext?.classPage === tabName && <div>{children}</div>}</>;
+  return (
+    <>
+      {pageContext?.classPage === tabName && (
+        <div className="w-full flex justify-center items-center">
+          {children}
+        </div>
+      )}
+    </>
+  );
 }

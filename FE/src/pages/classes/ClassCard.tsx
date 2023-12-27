@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 
+import { DEFAULT_TAB } from "@/ultis/appType";
+
 export default function ClassCard({
   id,
   className,
@@ -49,13 +51,13 @@ export default function ClassCard({
   };
   return (
     <Card
-      className={`hover:scale-[1.08]  transition-transform  ${className} h-fit`}
+      className={`hover:scale-[1.08]  transition-transform  ${className} h-[15rem]`}
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
       onClick={() => {
-        navigate(`/classes/${classId2}`);
+        navigate(`/classes/${classId2}/${DEFAULT_TAB}`);
         window.scrollTo(0, 0);
       }}
     >

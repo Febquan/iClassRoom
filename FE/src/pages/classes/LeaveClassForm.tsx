@@ -77,7 +77,7 @@ export default function LeaveClassForm() {
       <form
         onSubmit={form.handleSubmit(onLeaveClass)}
         className="space-y-3"
-        id="classCreate"
+        id="leaveClass"
       >
         <FormField
           control={form.control}

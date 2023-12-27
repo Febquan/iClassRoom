@@ -35,7 +35,7 @@ import { ROLE } from "@/ultis/appType";
 
 import {
   useGetClassId,
-  useGetMyRole,
+  useGetClassRole,
   useGetUserInfo,
   useIsOwner,
 } from "../customhook/classCustomHooks";
@@ -43,22 +43,24 @@ import {
 export function ClassShare() {
   const classId = useGetClassId();
   const isOwner = useIsOwner();
-  const roleInClass = useGetMyRole();
+  const roleInClass = useGetClassRole();
   const { userInfo } = useGetUserInfo();
   const isOwnnerOrTeacher = roleInClass == "teacher" || isOwner;
 
   return (
-    <div className=" flex flex-col gap-8">
-      <div className=" h-fit w-[50rem]  border-solid border-2 p-[3rem] rounded-lg">
+    <div className=" flex flex-col gap-8 w-full justify-center items-center">
+      <div className=" h-fit xl:w-[50rem]  w-full border-solid border-2 p-[3rem] rounded-lg">
         <ShareByLink isOwnnerOrTeacher={isOwnnerOrTeacher}></ShareByLink>
       </div>
-      <div className=" h-fit w-[50rem]  border-solid border-2 p-[3rem] rounded-lg">
-        <EmailInvite
-          isOwnnerOrTeacher={isOwnnerOrTeacher}
-          userName={userInfo!.userName}
-          classId={classId!}
-        ></EmailInvite>
-      </div>
+      {isOwnnerOrTeacher && (
+        <div className=" h-fit xl:w-[50rem] w-full border-solid border-2 p-[3rem] rounded-lg">
+          <EmailInvite
+            isOwnnerOrTeacher={isOwnnerOrTeacher}
+            userName={userInfo!.userName}
+            classId={classId!}
+          ></EmailInvite>
+        </div>
+      )}
     </div>
   );
 }
@@ -147,7 +149,7 @@ function EmailInvite({
       <form
         onSubmit={form.handleSubmit(onEmailInvite)}
         className="space-y-3"
-        id="classCreate"
+        id="classShare"
       >
         <FormField
           control={form.control}
@@ -279,7 +281,7 @@ function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
   }, [getInviteLink, isOwnnerOrTeacher]);
 
   return (
-    <div className="w-full flex items-center relative  flex-col gap-4">
+    <div className="w-full  flex items-center relative  flex-col gap-4">
       <h1 className="scroll-m-20 text-2xl font-bold tracking-tight ">
         Share by link
       </h1>
@@ -306,36 +308,39 @@ function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
           </Button>
         </div>
       </div>
-      <div className="w-full">
-        <Label htmlFor="link" className="">
-          Invite link for teachers :
-        </Label>
-        <div className="flex flex-1 gap-2">
-          <Input
-            id="link"
-            readOnly
-            value={teacherInviteLink}
-            disabled={!isOwnnerOrTeacher}
-          />
-          <Button
-            disabled={!isOwnnerOrTeacher}
-            type="submit"
-            size="sm"
-            className="px-3"
-            onClick={() => {
-              navigator.clipboard.writeText(teacherInviteLink);
-              toast({
-                description: "Copied invite link for teachers !",
-                duration: 2000,
-                dir: "left",
-              });
-            }}
-          >
-            <span className="sr-only">Copy</span>
-            <CopyIcon className="h-4 w-4" />
-          </Button>
+
+      {isOwnnerOrTeacher && (
+        <div className="w-full">
+          <Label htmlFor="link" className="">
+            Invite link for teachers :
+          </Label>
+          <div className="flex flex-1 gap-2">
+            <Input
+              id="link"
+              readOnly
+              value={teacherInviteLink}
+              disabled={!isOwnnerOrTeacher}
+            />
+            <Button
+              disabled={!isOwnnerOrTeacher}
+              type="submit"
+              size="sm"
+              className="px-3"
+              onClick={() => {
+                navigator.clipboard.writeText(teacherInviteLink);
+                toast({
+                  description: "Copied invite link for teachers !",
+                  duration: 2000,
+                  dir: "left",
+                });
+              }}
+            >
+              <span className="sr-only">Copy</span>
+              <CopyIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

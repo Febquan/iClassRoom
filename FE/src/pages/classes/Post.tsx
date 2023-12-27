@@ -1,18 +1,18 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { File } from "lucide-react";
 import Comment from "./Comment";
 import { GanttChartSquare, MoreVerticalIcon } from "lucide-react";
 import PostComment from "./PostComment";
 import { useState } from "react";
 
 import parse from "html-react-parser";
-import api from "@/axios/axios";
 import { ClassToStudent } from "@/ultis/appType";
 import { Post as PostType } from "@/ultis/appType";
 
 import dayjs from "@/ultis/myDayjs";
+import { sortByTime } from "@/ultis/classFunctions";
+import { FileComponent } from "./FileComponent";
 
 export default function Post({
   postData,
@@ -22,33 +22,13 @@ export default function Post({
   classUserInfo: ClassToStudent[];
 }) {
   const [showComment, setShowComment] = useState<boolean>(false);
-  //  const {createdAt, title, content,authorId} =postData;
-  console.log(postData);
+
   const postAuthor = classUserInfo.find(
     (user) => user.userId === postData.authorId
   );
-  function getPosition(string: string, subString: string, index: number) {
-    return string.split(subString, index).join(subString).length;
-  }
-  const getFileName = (key: string) => {
-    const pos = getPosition(key, "-", 2);
-    return key.substring(pos + 1);
-  };
 
-  async function downloadFile(fileKey: string) {
-    try {
-      const response = await api.post("user/class/presignedS3Url", {
-        fileKey,
-      });
-      const dowloadUrl = response.data.S3PresignedUrl;
-      const a = document.createElement("a");
-      a.href = dowloadUrl;
-      a.download = getFileName(fileKey);
-      a.click();
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  const sortedComment = postData.comments.sort(sortByTime);
+
   return (
     <div className="relative flex flex-col gap-3 h-fit w-full  border-solid border-2 p-[3rem] rounded-lg">
       {postData.isPrivate && (
@@ -83,22 +63,11 @@ export default function Post({
           {postData.title}
         </h1>
       </div>
-      <p>{parse(postData.content)}</p>
+      <div className="my-content-tiptap">{parse(postData.content)}</div>
 
       <div className=" flex flex-col gap-2">
-        {postData.fileKeys.map((key) => (
-          <div>
-            <Badge
-              variant="secondary"
-              className="text-[1rem] px-2 w-fit flex gap-2 cursor-pointer"
-              onClick={() => {
-                downloadFile(key);
-              }}
-            >
-              <File size={20}></File>
-              <span> {getFileName(key)} </span>
-            </Badge>
-          </div>
+        {postData.fileKeys.map((key, i) => (
+          <FileComponent fileKey={key} key={i} />
         ))}
       </div>
       <Separator orientation="horizontal"></Separator>
@@ -121,11 +90,11 @@ export default function Post({
         }}
       >
         <div className=" overflow-y-hidden flex flex-col">
-          <PostComment></PostComment>
+          <PostComment postId={postData.id}></PostComment>
           <div className=" flex flex-col gap-5 mt-4  ">
-            <Comment></Comment>
-            <Comment></Comment>
-            <Comment></Comment>
+            {sortedComment.map((el, i) => (
+              <Comment key={i} commentData={el} />
+            ))}
           </div>
           <div className=" flex gap-2 cursor-pointer self-end mt-3">
             <span

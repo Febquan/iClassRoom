@@ -1,4 +1,5 @@
 import { AxiosError } from "axios";
+import { ReactNode } from "react";
 
 export type Role = "student" | "teacher";
 export type UserInfo = {
@@ -15,6 +16,7 @@ export type Class = {
   createBy: string;
   createdAt: string;
   haveStudent: ClassToStudent[];
+  studentExtraInfo: ExtraTable[];
 };
 export type userToClass = {
   id: string;
@@ -35,8 +37,8 @@ export type Post = {
   isPrivate: boolean;
   fileKeys: string[];
   receiverId?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  comments: any;
+
+  comments: Comment[];
 };
 export type Student = {
   avatar: string;
@@ -50,7 +52,61 @@ export type ClassToStudent = {
   userId: string;
   student: Student;
 };
+export type Comment = {
+  postId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+};
+export type GradePart = {
+  id: string;
+  name: string;
+  scale: number;
+  classID: string;
+  sort: number;
+  testid: Test[];
+};
+export type DoTest = {
+  testId: string;
+  studentId: string;
+  point: number | null;
+  pendingGradeReview: boolean;
+  fileKeys: string[];
+};
+export type Test = {
+  id: string;
+  name: string;
+  scale: number;
+  isFinalize: boolean;
+  gradePartId: string;
+  doTest: DoTest[];
+  sort: number;
+};
+export type ExtraInfo = {
+  "Student Id": string;
+};
+
+export type DynamicObject = {
+  [key: string]: string;
+};
+export type tabOptions = {
+  icon: ReactNode;
+  id: string;
+  text: string;
+  role: Role | "all";
+}[];
+export type ExtraTable = DynamicObject & ExtraInfo;
+
 export type ClassInfo = Class & { post: Post[] };
 export const ROLE = ["teacher", "student"] as const;
 
 export type MyError = AxiosError<{ success: boolean; error: string }>;
+
+export const ClassTab = {
+  post: "classPost" as const,
+  share: "classShare" as const,
+  roster: "classRosters" as const,
+  grading: "classGrading" as const,
+  settings: "classSettings" as const,
+};
+export const DEFAULT_TAB = ClassTab.post;

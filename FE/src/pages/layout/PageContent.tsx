@@ -1,13 +1,15 @@
 import BackButton from "@/components/ui/backButton";
-import { ReactNode, createContext, useState } from "react";
+import { ReactNode, createContext, useEffect, useState } from "react";
 import PageSetting from "./PageSetting";
 import { ChevronLeft } from "lucide-react";
+import {
+  useGetClassId,
+  useGetClassPage,
+  useGetClassRole,
+} from "../customhook/classCustomHooks";
+import { useNavigate } from "react-router-dom";
+import { tabOptions } from "@/ultis/appType";
 
-type tabOptions = {
-  icon: ReactNode;
-  id: string;
-  text: string;
-}[];
 export interface PageContextType {
   classPage: string;
   setClassPage: React.Dispatch<React.SetStateAction<string>>;
@@ -25,13 +27,20 @@ export default function PageContent({
   children: ReactNode;
   defaultTab: string;
 }) {
-  const [openClassNav, setOpenClassNav] = useState<boolean>(true);
+  const [openClassNav, setOpenClassNav] = useState<boolean>(false);
   const [classPage, setClassPage] = useState<string>(defaultTab);
   const contextValue = {
     classPage,
     setClassPage,
   };
+  const tabPage = useGetClassPage();
+  const classId = useGetClassId();
+  const navigate = useNavigate();
+  const role = useGetClassRole();
 
+  useEffect(() => {
+    tabPage && setClassPage(tabPage);
+  }, [classId, navigate, tabPage]);
   return (
     <PageSetting
       className={`gap-5 flex justify-center items-center transition-all ${
@@ -44,24 +53,32 @@ export default function PageContent({
       </PageContext.Provider>
 
       <div
-        className={`   transition-all flex justify-center items-start py-[3rem] fixed  border-t-0 h-full top-0 right-0 mt-[3.9rem] border-solid border-2  ${
+        className={`  backdrop-filter backdrop-blur-sm bg-opacity-0  transition-all flex justify-center items-start py-[3rem] fixed  border-t-0 h-full top-0 right-0 mt-[3.9rem] border-solid border-2  ${
           openClassNav ? "w-[15rem]" : "w-0"
         }  `}
       >
         <div className="flex flex-col gap-5 w-fit overflow-hidden">
-          {tabOptions.map((el) => (
-            <div
-              className={`flex gap-2 cursor-pointer rounded-xl p-3 transition-all  ${
-                classPage === el.id && "bg-accent"
-              }`}
-              onClick={() => {
-                setClassPage(el.id);
-              }}
-            >
-              {el.icon}
-              <span className=" font-semibold">{el.text}</span>
-            </div>
-          ))}
+          {tabOptions.map((el, i) => {
+            return (
+              <>
+                {(role == el.role || el.role == "all") && (
+                  <div
+                    key={i}
+                    className={`flex gap-2 cursor-pointer rounded-xl p-3 transition-all  ${
+                      classPage === el.id && "bg-accent"
+                    }`}
+                    onClick={() => {
+                      setClassPage(el.id);
+                      navigate(`/classes/${classId}/${el.id}`);
+                    }}
+                  >
+                    {el.icon}
+                    <span className=" font-semibold">{el.text}</span>
+                  </div>
+                )}
+              </>
+            );
+          })}
         </div>
         <div className=" absolute left-[-4rem] top-[50vh]">
           <div

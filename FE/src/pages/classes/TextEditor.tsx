@@ -19,8 +19,10 @@ export default function TextEditor({
       },
     },
     onUpdate({ editor }) {
-      onChange(editor.getHTML());
-      console.log(editor.getHTML());
+      if (!editor.isFocused) {
+        onChange(editor.getHTML());
+        console.log(editor.getHTML());
+      }
     },
   });
   console.log(content);

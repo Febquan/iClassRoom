@@ -76,7 +76,7 @@ export default function EmailVerify() {
         <form
           onSubmit={form.handleSubmit(onChangePassword)}
           className="space-y-3 w-[40rem]"
-          id="classCreate"
+          id="emailChange"
         >
           <FormField
             disabled={isOauth}

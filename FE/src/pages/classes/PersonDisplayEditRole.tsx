@@ -1,13 +1,18 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+
 import { ClassToStudent, Role } from "@/ultis/appType";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { UpperFirstLetter } from "@/ultis/classFunctions";
-
-export default function PersonDisplay({
+export default function PersonDisplayEditRole({
   i,
   personInfo,
-  isClassOwner,
+  changeRole,
   isChange,
 }: {
   i: string;
@@ -38,29 +43,22 @@ export default function PersonDisplay({
         </div>
       </div>
 
-      <div className=" flex gap-3">
-        {personInfo.organizeId && personInfo.role == "student" && (
-          <div className="w-[7rem] h-9">
-            <Badge
-              variant="outline"
-              className="w-full h-full flex justify-center"
-            >
-              {personInfo.organizeId}
-            </Badge>
-          </div>
-        )}
-        <div className="w-[7rem] h-9 ">
-          <Badge
-            className="w-full h-full flex justify-center"
-            variant="outline"
-          >
-            {isClassOwner ? (
-              <span>Owner</span>
-            ) : (
-              <span>{UpperFirstLetter(personInfo.role)}</span>
-            )}
-          </Badge>
-        </div>
+      <div className="w-[7rem] h-9 ">
+        <Select
+          onValueChange={(val) => {
+            changeRole && changeRole(personInfo.student.email, val as Role);
+          }}
+          defaultValue={personInfo.role.toLowerCase()}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a role for invited user" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="student">Student</SelectItem>
+            <SelectItem value="teacher">Teacher</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

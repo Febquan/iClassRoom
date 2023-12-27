@@ -11,6 +11,7 @@ const {
 const { deleteFile } = require("./../utils/fileManager");
 const { MulterError } = require("multer");
 const upload = require("../utils/upload");
+const { promises } = require("nodemailer/lib/xoauth2");
 
 function HandleMulterError(req, res, next) {
   upload.array("files")(req, res, (err) => {
@@ -23,6 +24,63 @@ function HandleMulterError(req, res, next) {
 
     next();
   });
+}
+async function checkIsInClass(req, res, next) {
+  const user = req.user || req.session.user;
+  const { classId } = req.params;
+  const enroll = await prisma.userClass.findFirst({
+    where: {
+      userId: user.id,
+      courseId: classId,
+    },
+  });
+  if (!enroll) {
+    const error = new Error("User are not a member of this class");
+    error.statusCode = 401;
+    return next(error);
+  }
+  next();
+}
+async function checkIsTeacher(req, res, next) {
+  const user = req.user || req.session.user;
+  const classId = req.params.classId || req.body.classId;
+  const enroll = await prisma.userClass.findFirst({
+    where: {
+      userId: user.id,
+      courseId: classId,
+    },
+  });
+  console.log(
+    "------",
+    req.params,
+    req.body,
+    classId,
+    enroll,
+    enroll.role,
+    enroll.role != "teacher"
+  );
+  if (enroll.role != "teacher") {
+    const error = new Error("User are not teacher of this class");
+    error.statusCode = 401;
+    return next(error);
+  }
+  next();
+}
+async function checkIsClassOwner(req, res, next) {
+  const user = req.user || req.session.user;
+  const { classId } = req.body;
+  const isClassOwner = await prisma.class.findFirst({
+    where: {
+      id: classId,
+      createBy: user.id,
+    },
+  });
+  if (!isClassOwner) {
+    const error = new Error("User is not class owner");
+    error.statusCode = 401;
+    return next(error);
+  }
+  next();
 }
 
 async function createClassPost(req, res) {
@@ -85,6 +143,7 @@ async function createClass(req, res) {
     console.log(theClass);
     res.json({ success: true });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ success: false, error: error.message });
   }
 }
@@ -161,7 +220,7 @@ async function getTeacherInviteLink(req, res) {
 
 async function acceptInvite(req, res) {
   try {
-    const { hashedClassId, userId } = req.body;
+    const { hashedClassId, userId, studentClassId } = req.body;
     const { classId, role } = await jwt.verify(
       hashedClassId,
       process.env.TOKEN_PRIVATE_KEY
@@ -171,6 +230,7 @@ async function acceptInvite(req, res) {
         userId: userId,
         courseId: classId,
         role: role,
+        organizeId: studentClassId,
       },
     });
 
@@ -320,7 +380,204 @@ async function changeUserRole(req, res) {
   }
 }
 
+async function changeStudentId(req, res) {
+  const { changedInfo, classId } = req.body;
+  console.log(changedInfo);
+  try {
+    for (info of changedInfo) {
+      const { userId, newStudentId } = info;
+      await prisma.userClass.update({
+        where: {
+          userId_courseId: { userId, courseId: classId },
+        },
+        data: {
+          organizeId: newStudentId,
+        },
+      });
+    }
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function changeMyStudentId(req, res) {
+  const { userId, newOrganizeId, classId } = req.body;
+  try {
+    let organizeIds = await prisma.userClass.findMany({
+      where: {
+        courseId: classId,
+      },
+      select: {
+        organizeId: true,
+      },
+    });
+    organizeIds = organizeIds.map((el) => el.organizeId);
+    if (organizeIds.includes(newOrganizeId)) {
+      throw new Error("Student id already exist");
+    }
+    console.log(userId, newOrganizeId, newOrganizeId, "s");
+    await prisma.userClass.update({
+      where: {
+        userId_courseId: { userId, courseId: classId },
+      },
+      data: {
+        organizeId: newOrganizeId,
+      },
+    });
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function postComment(req, res) {
+  const { postId, authorId, content } = req.body;
+  console.log(postId, authorId, content);
+  try {
+    await prisma.comment.create({
+      data: {
+        authorId,
+        content,
+        postId,
+      },
+    });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function postStudentExtraInfo(req, res) {
+  const { extraInfo, classId } = req.body;
+  console.log(extraInfo);
+  try {
+    await prisma.class.update({
+      where: {
+        id: classId,
+      },
+      data: {
+        studentExtraInfo: extraInfo,
+      },
+    });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function getClassGrade(req, res) {
+  const { classId } = req.params;
+  try {
+    const classGrade = await prisma.class.findFirst({
+      where: {
+        id: classId,
+      },
+      include: {
+        gradePart: {
+          include: {
+            testid: {
+              include: {
+                doTest: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    res.json({
+      classGrade: classGrade.gradePart,
+      success: true,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function postUpdateGrade(req, res) {
+  const { gradeParts, classId } = req.body;
+
+  const Tests = gradeParts.map((gradePart) => gradePart.testid).flat();
+
+  console.log("Tests", Tests);
+
+  const doTests = Tests.map((test) => test.doTest).flat();
+
+  console.log("doTests", doTests);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await Promise.all(
+        doTests.map(async (doTestData) => {
+          console.log(doTestData.studentId, doTestData.testId, "lmao");
+          await tx.doTest.update({
+            where: {
+              studentId_testId: {
+                studentId: doTestData.studentId,
+                testId: doTestData.testId,
+              },
+            },
+            data: {
+              point: doTestData.point,
+              pendingGradeReview: doTestData.pendingGradeReview,
+            },
+          });
+        })
+      );
+
+      await Promise.all(
+        Tests.map(async (TestData) => {
+          await tx.Test.update({
+            where: {
+              id: TestData.id,
+            },
+            data: {
+              name: TestData.name,
+              scale: TestData.scale,
+              gradePartId: TestData.gradePartId,
+              sort: TestData.sort,
+              isFinalize: TestData.isFinalize,
+            },
+          });
+        })
+      );
+
+      await Promise.all(
+        gradeParts.map(async (gradePartData) => {
+          await tx.gradePart.update({
+            where: {
+              id: gradePartData.id,
+            },
+            data: {
+              name: gradePartData.name,
+              scale: gradePartData.scale,
+              sort: gradePartData.sort,
+            },
+          });
+        })
+      );
+    });
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
+  postUpdateGrade,
   createClass,
   getAllUserClass,
   getStudentInviteLink,
@@ -334,4 +591,12 @@ module.exports = {
   inviteEmails,
   leaveClass,
   changeUserRole,
+  postComment,
+  changeStudentId,
+  postStudentExtraInfo,
+  checkIsInClass,
+  checkIsClassOwner,
+  changeMyStudentId,
+  getClassGrade,
+  checkIsTeacher,
 };

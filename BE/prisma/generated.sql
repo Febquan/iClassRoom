@@ -43,7 +43,8 @@ CREATE TABLE "Post" (
     "isPrivate" BOOLEAN NOT NULL,
     "authorId" TEXT NOT NULL,
     "classId" TEXT NOT NULL,
-    "receiverId" TEXT NOT NULL,
+    "receiverId" TEXT,
+    "fileKeys" TEXT[],
 
     CONSTRAINT "Post_pkey" PRIMARY KEY ("id")
 );
@@ -106,7 +107,7 @@ ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") 
 ALTER TABLE "Post" ADD CONSTRAINT "Post_classId_fkey" FOREIGN KEY ("classId") REFERENCES "Class"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Post" ADD CONSTRAINT "Post_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Test" ADD CONSTRAINT "Test_gradePartId_fkey" FOREIGN KEY ("gradePartId") REFERENCES "GradePart"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

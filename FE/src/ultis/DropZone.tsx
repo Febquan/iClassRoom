@@ -27,24 +27,20 @@ const rejectStyle = {
   borderColor: "#ff1744",
 };
 
-export default function Dropzone({
+interface DropzoneProps<T extends { files?: File[] }> {
+  multiple?: boolean;
+  form: UseFormReturn<T, undefined>;
+}
+
+export default function Dropzone<T extends { files?: File[] }>({
   multiple,
   form,
   ...rest
-}: {
-  multiple?: boolean;
-  form: UseFormReturn<
-    {
-      title: string;
-      files?: File[];
-      description: string;
-    },
-    undefined
-  >;
-}) {
+}: DropzoneProps<T>) {
   const [filesName, setFileName] = useState<string[] | undefined>([]);
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      // @ts-expect-error the Path form react-hook dont work
       form.setValue("files", acceptedFiles as File[], {
         shouldValidate: true,
       });
@@ -79,6 +75,7 @@ export default function Dropzone({
   );
 
   function cancelFile(name: string) {
+    // @ts-expect-error the Path form react-hook dont work
     form.setValue("files", files?.filter((el) => el.name != name) as File[], {
       shouldValidate: true,
     });

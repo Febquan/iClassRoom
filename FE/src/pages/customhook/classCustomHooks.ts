@@ -3,9 +3,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
 import { ClassInfo } from "../classes/ClassPost";
-import { ClassToStudent, Role, UserInfo, userToClass } from "@/ultis/appType";
+import {
+  ClassToStudent,
+  GradePart,
+  Role,
+  UserInfo,
+  userToClass,
+} from "@/ultis/appType";
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const useGetAllUSerClass = (userId: string) => {
   const { toast } = useToast();
@@ -34,14 +40,24 @@ export const useGetAllUSerClass = (userId: string) => {
 };
 
 export const useGetClassInfo = (classId: string) => {
+  const { toast } = useToast();
   const getClassContent = async () => {
     const res = await api.get(`/user/class/getClassContent/${classId}`);
     return res.data.classInfo;
   };
-  const { data: classInfo } = useQuery<ClassInfo | undefined>({
+  const { data: classInfo, isError } = useQuery<ClassInfo | undefined>({
     queryKey: [`Class-${classId}`],
     queryFn: getClassContent,
   });
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Cant request to this class.",
+      });
+    }
+  }, [isError, toast]);
   return { classInfo };
 };
 
@@ -53,16 +69,29 @@ export const useGetUserInfo = () => {
   return { userInfo };
 };
 
+export const useGetAllStudentInClass = () => {
+  const classId = useGetClassId();
+  const { classInfo } = useGetClassInfo(classId!);
+  const students = classInfo?.haveStudent?.filter(
+    (el) => el.role === "student"
+  );
+  return students;
+};
+
 export const useUserClassClassify = () => {
   const classId = useGetClassId();
   const { classInfo } = useGetClassInfo(classId!);
-  const initClassClassify: ClassToStudent[] = JSON.parse(
-    JSON.stringify(classInfo?.haveStudent)
+
+  const initClassClassify = JSON.parse(
+    JSON.stringify(classInfo?.haveStudent ? classInfo.haveStudent : [])
   );
-  console.log(initClassClassify, "xxxx");
   const [userInClass, setUserInclass] = useState<ClassToStudent[] | undefined>(
     initClassClassify
   );
+  useEffect(() => {
+    setUserInclass(classInfo?.haveStudent);
+  }, [classInfo?.haveStudent]);
+
   const teachers = userInClass?.filter((el) => el.role === "teacher");
   const students = userInClass?.filter((el) => el.role === "student");
   const classOwner = userInClass?.filter(
@@ -103,25 +132,150 @@ export const useUserClassClassify = () => {
   return { teachers, students, classOwner, changeRole, getChangeUsers };
 };
 
+const checkStudentId = (inputString: string) => {
+  const regex = /^.+$/;
+  return regex.test(inputString);
+};
+
+export const useUserStudentClassId = () => {
+  const classId = useGetClassId();
+  const { classInfo } = useGetClassInfo(classId!);
+  const initClass: ClassToStudent[] = JSON.parse(
+    JSON.stringify(classInfo?.haveStudent ? classInfo.haveStudent : [])
+  );
+  const [userInClass, setUserInclass] = useState<ClassToStudent[] | undefined>(
+    initClass
+  );
+  useEffect(() => {
+    setUserInclass(classInfo?.haveStudent);
+  }, [classInfo?.haveStudent]);
+
+  const students = userInClass?.filter((el) => el.role === "student");
+
+  const changeStudentId = (userId: string, studentId: string) => {
+    const copy: ClassToStudent[] = JSON.parse(JSON.stringify(userInClass));
+    const userIndex = userInClass?.findIndex((el) => el.userId == userId);
+    copy![userIndex!].organizeId = studentId;
+
+    setUserInclass([...copy]);
+  };
+
+  const getErrorUser = (): {
+    userId: string;
+    errorMes: string;
+  }[] => {
+    if (!userInClass) return [];
+    const errorUser = [];
+    for (const el of userInClass) {
+      if (!checkStudentId(el.organizeId) && el.role == "student") {
+        errorUser.push({ userId: el.userId, errorMes: "Invalid Id" });
+      }
+      if (
+        userInClass.find(
+          (el2) => el2.organizeId == el.organizeId && el2.userId != el.userId
+        )
+      ) {
+        errorUser.push({ userId: el.userId, errorMes: "Id already exist" });
+      }
+    }
+    return errorUser;
+  };
+
+  const getChangeUsers = (): {
+    userId: string;
+    newStudentId: string;
+  }[] => {
+    const changedUser = [];
+
+    for (const user of initClass) {
+      const afterStudentId = userInClass?.find(
+        (el) => el.userId == user.userId
+      )?.organizeId;
+      const initRole = user.organizeId;
+      if (initRole != afterStudentId) {
+        changedUser.push({
+          userId: user.userId,
+          newStudentId: afterStudentId!,
+        });
+      }
+    }
+
+    return changedUser;
+  };
+
+  return { students, changeStudentId, getErrorUser, getChangeUsers };
+};
+
+export const useGetClassExtraInfo = () => {
+  const classId = useGetClassId();
+  const { classInfo } = useGetClassInfo(classId!);
+
+  return classInfo?.studentExtraInfo;
+};
+export const useGetRegisterStudentId = () => {
+  const ClassStudentIdInfo = useGetClassExtraInfo();
+  return ClassStudentIdInfo?.map((student) => String(student["Student Id"]));
+};
+
 export const useIsOwner = () => {
   const { userInfo } = useGetUserInfo();
-  const { classes } = useGetAllUSerClass(userInfo!.userId);
   const classId = useGetClassId();
-  const classAuthor = classes?.find((el) => el.courseId == classId)?.class
-    .createBy;
+  const { classInfo } = useGetClassInfo(classId!);
+  const classAuthor = classInfo?.createBy;
 
   return classAuthor == userInfo?.userId;
 };
 
-export const useGetMyRole = () => {
+export const useGetClassRole = () => {
   const { userInfo } = useGetUserInfo();
-  const { classes } = useGetAllUSerClass(userInfo!.userId);
   const classId = useGetClassId();
-  const roleInClass = classes?.find((el) => el.courseId == classId)?.role;
-  return roleInClass;
+  const { classInfo } = useGetClassInfo(classId!);
+  const role = classInfo?.haveStudent.find(
+    (el) => el.userId == userInfo?.userId
+  )?.role;
+  return role;
+};
+
+export const useGetMyInfoInClass = () => {
+  const { userInfo } = useGetUserInfo();
+  const classId = useGetClassId();
+  const { classInfo } = useGetClassInfo(classId!);
+  return classInfo?.haveStudent.find((el) => el.userId == userInfo?.userId);
+};
+
+export const useGetUserPublicInfo = (userId: string) => {
+  const students = useGetAllStudentInClass();
+  return students?.find((student) => student.userId == userId);
 };
 
 export const useGetClassId = () => {
   const { classId } = useParams();
   return classId;
+};
+export const useGetClassPage = () => {
+  const { tabPage } = useParams();
+  return tabPage;
+};
+
+export const useGetClassGrade = () => {
+  const { toast } = useToast();
+  const classId = useGetClassId();
+  const getClassGrade = async () => {
+    const res = await api.get(`/user/class/getClassGrade/${classId}`);
+    return res.data.classGrade;
+  };
+  const { data: classGrade, isError } = useQuery<GradePart[] | undefined>({
+    queryKey: [`Class-Grade-${classId}`],
+    queryFn: getClassGrade,
+  });
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Cant request to this class.",
+      });
+    }
+  }, [isError, toast]);
+  return classGrade;
 };

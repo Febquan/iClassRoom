@@ -23,19 +23,14 @@ export type Post = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   comments: any;
 };
-
+import { sortByTime } from "@/ultis/classFunctions";
 export default function ClassPost() {
   const classId = useGetClassId();
   const { classInfo } = useGetClassInfo(classId!);
   const { userInfo } = useGetUserInfo();
-  const sortedPost = classInfo?.post.sort((a, b) => {
-    const timeA = new Date(a.createdAt);
-    const timeB = new Date(b.createdAt);
-
-    return timeB.getTime() - timeA.getTime();
-  });
+  const sortedPost = classInfo?.post.sort(sortByTime);
   return (
-    <div className=" grid  gap-7  xl:w-[50rem]  relative">
+    <div className=" grid  gap-7  xl:w-[50rem] w-full  relative">
       <div className="flex flex-col gap-5">
         {userInfo && classInfo && (
           <CreatePost userInfo={userInfo} classInfo={classInfo}></CreatePost>

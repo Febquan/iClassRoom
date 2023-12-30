@@ -66,6 +66,8 @@ const createtempGradePart = (
         gradePartId: gradePartId,
         sort: 0,
         isFinalize: false,
+        isOnline: false,
+        deadLine: undefined,
         doTest: [
           ...studentIds.map((studentId) => ({
             testId: testId,
@@ -81,13 +83,22 @@ const createtempGradePart = (
 };
 
 export default function TeacherClassGrading() {
-  const students = useGetAllStudentInClass();
+  const [searchValue, setSearchValue] = useState<string>("");
+  const registeredStudent: string[] | undefined = useGetRegisterStudentId();
+
+  const students = useGetAllStudentInClass()?.filter(
+    (el) =>
+      (el.student.userName.toLowerCase().includes(searchValue.toLowerCase()) ||
+        el.organizeId.includes(searchValue)) &&
+      (registeredStudent ? registeredStudent?.includes(el.organizeId) : true)
+  );
   const gradeParts = useGetClassGrade();
   // const filterRegisteredStudent=
   const [activeGradePart, setActiveGradePart] = useState<GradePart>();
   const [activeTest, setActiveTest] = useState<Test>();
 
-  let studentIdOrder = students?.map((student) => student.userId);
+  const studentIdOrder = students?.map((student) => student.userId);
+
   const [gradePartsSortable, setGradePartsSortable] = useState<
     GradePart[] | undefined
   >(gradeParts);
@@ -296,25 +307,28 @@ export default function TeacherClassGrading() {
     if (active.id !== over?.id && over?.id && over.id === "trashCan") {
       setGradePartsSortable((oldGradePartState: GradePart[] | undefined) => {
         if (!oldGradePartState) return;
+        let newState: GradePart[] = JSON.parse(
+          JSON.stringify(oldGradePartState)
+        );
         if (checkIsTestId(active.id)) {
-          const containerIndex = oldGradePartState.findIndex(
+          const containerIndex = newState.findIndex(
             (el) => el.id === findContainerGradePart(active.id)
           );
           const newTestState = [
-            ...oldGradePartState[containerIndex].testid.filter(
+            ...newState[containerIndex].testid.filter(
               (test) => test.id != active.id
             ),
           ];
 
-          oldGradePartState[containerIndex].testid = newTestState;
-          return [...oldGradePartState];
+          newState[containerIndex].testid = newTestState;
+          return [...newState];
         }
         if (checkIsGradePartId(active.id)) {
-          const newTestState = oldGradePartState.filter(
+          const newTestState = newState.filter(
             (gradePart) => gradePart.id != active.id
           );
-          oldGradePartState = newTestState;
-          return [...oldGradePartState];
+          newState = newTestState;
+          return newState;
         }
       });
     }
@@ -327,18 +341,6 @@ export default function TeacherClassGrading() {
   // calculate final point
 
   console.log(gradePartsSortable, "====================");
-  const [searchValue, setSearchValue] = useState<string>("");
-  const registeredStudent: string[] | undefined = useGetRegisterStudentId();
-
-  studentIdOrder = students
-    ?.filter((el) =>
-      (el.student.userName.toLowerCase().includes(searchValue.toLowerCase()) ||
-        el.organizeId.includes(searchValue)) &&
-      registeredStudent
-        ? registeredStudent?.includes(el.organizeId)
-        : true
-    )
-    .map((el) => el.userId);
 
   const checkValidGradePartScale = checkEqual(
     1,
@@ -471,37 +473,27 @@ export default function TeacherClassGrading() {
               ></Plus>
             )}
           </Row>
-          {students
-            ?.filter((el) =>
-              (el.student.userName
-                .toLowerCase()
-                .includes(searchValue.toLowerCase()) ||
-                el.organizeId.includes(searchValue)) &&
-              registeredStudent
-                ? registeredStudent?.includes(el.organizeId)
-                : true
-            )
-            ?.map((el, i) => (
-              <Row
-                key={`${el.userId}${i}`}
-                className=" grid grid-cols-[3fr_2fr]  justify-center items-center  h-[4rem]   "
-              >
-                <div className="flex  gap-1  justify-center items-center ">
-                  <Avatar className="h-[30px] w-[30px]">
-                    <AvatarImage src={el.student.avatar} alt="@shadcn" />
-                    <AvatarFallback>{el.student.userName[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className="text-[0.8rem] font-medium leading-non">
-                      {el.student.userName}
-                    </span>
-                  </div>
+          {students?.map((el, i) => (
+            <Row
+              key={`${el.userId}${i}`}
+              className=" grid grid-cols-[3fr_2fr]  justify-center items-center  h-[4rem]   "
+            >
+              <div className="flex  gap-1  justify-center items-center ">
+                <Avatar className="h-[30px] w-[30px]">
+                  <AvatarImage src={el.student.avatar} alt="@shadcn" />
+                  <AvatarFallback>{el.student.userName[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-[0.8rem] font-medium leading-non">
+                    {el.student.userName}
+                  </span>
                 </div>
-                <div className="text-[0.8rem] p-2 font-semibold border-l-2">
-                  {el.organizeId}
-                </div>
-              </Row>
-            ))}
+              </div>
+              <div className="text-[0.8rem] p-2 font-semibold border-l-2">
+                {el.organizeId}
+              </div>
+            </Row>
+          ))}
         </Col>
         <div className={`  overflow-auto scrollbar-none `}>
           <div

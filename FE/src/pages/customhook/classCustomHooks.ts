@@ -279,3 +279,29 @@ export const useGetClassGrade = () => {
   }, [isError, toast]);
   return classGrade;
 };
+
+export const useGetStudentGrade = () => {
+  const { toast } = useToast();
+  const classId = useGetClassId();
+  const userId = useGetUserInfo().userInfo?.userId;
+  const getStudentClassGrade = async () => {
+    const res = await api.get(
+      `/user/class/getStudentGrade/${classId}/${userId}`
+    );
+    return res.data.studentGrade;
+  };
+  const { data: classGrade, isError } = useQuery<GradePart[] | undefined>({
+    queryKey: [`Student-Grade-${userId}-${classId}`],
+    queryFn: getStudentClassGrade,
+  });
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Cant request to this class.",
+      });
+    }
+  }, [isError, toast]);
+  return classGrade;
+};

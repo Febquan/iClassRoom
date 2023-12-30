@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  CalendarIcon,
   CheckCheckIcon,
   FileCheck,
   FileMinus,
@@ -78,18 +79,6 @@ export function TestComponent({
           <span {...listeners} className={` absolute right-1  top-[10px]  `}>
             <GripVertical size={18}></GripVertical>
           </span>
-          <TestModal
-            test={test}
-            setGradePartsSortable={setGradePartsSortable}
-            findContainerGradePart={findContainerGradePart}
-          >
-            <Button
-              variant="ghost"
-              className=" hover:bg-green-500 text-secondary-foreground h-5 p-2 py-3 absolute left-2  top-[8px] "
-            >
-              <PenBoxIcon size={12} />
-            </Button>
-          </TestModal>
         </>
       )}
       <div
@@ -105,11 +94,33 @@ export function TestComponent({
         }
         `}
       >
-        <EditableTest
-          isPublic={test.isFinalize}
-          test={test}
-          gradingMode={gradingMode}
-        ></EditableTest>
+        <div className="flex gap-1 justify-center items-center">
+          <TestModal
+            test={test}
+            setGradePartsSortable={setGradePartsSortable}
+            findContainerGradePart={findContainerGradePart}
+          >
+            <span className=" flex gap-2 justify-center items-center">
+              {gradingMode && test.isFinalize && (
+                <span className="bg-primary rounded-full p-[2px] w-5 h-5 flex  justify-center items-center">
+                  <CheckCheckIcon className="text-primary-foreground" />
+                </span>
+              )}
+              {gradingMode &&
+                test.isOnline &&
+                test.deadLine &&
+                (new Date(test.deadLine) > new Date() ? (
+                  <CalendarClockIcon
+                    size={18}
+                    className=" text-secondary-foreground"
+                  />
+                ) : (
+                  <CalendarClockIcon size={18} className=" text-primary " />
+                ))}
+              {test.name} {gradingMode && <span> | {test.scale} </span>}
+            </span>
+          </TestModal>
+        </div>
       </div>
       <div>
         {orderDoTest(test.doTest, studentIdOrder).map((el, k) => (
@@ -135,6 +146,7 @@ export function TestComponent({
                   findContainerGradePart={findContainerGradePart}
                   testId={test.id}
                   isPublic={test.isFinalize}
+                  isOnline={test.isOnline}
                 >
                   <Button variant="secondary" className="h-5 p-2 py-3  ">
                     {el.pendingGradeReview ? (
@@ -162,6 +174,7 @@ export function TestComponent({
                       findContainerGradePart={findContainerGradePart}
                       testId={test.id}
                       isPublic={test.isFinalize}
+                      isOnline={test.isOnline}
                     >
                       <Button variant="outline" className="h-5 p-2 py-3  ">
                         <>
@@ -193,29 +206,6 @@ export function TestComponent({
   );
 }
 
-function EditableTest({
-  test,
-  gradingMode,
-  isPublic,
-}: {
-  test: Test;
-  gradingMode: boolean;
-  isPublic: boolean;
-}) {
-  return (
-    <div className="flex gap-1 justify-center items-center">
-      <span className=" flex gap-2 justify-center items-center">
-        {isPublic && (
-          <span className="bg-primary rounded-full p-[2px] w-5 h-5 flex  justify-center items-center">
-            <CheckCheckIcon className="text-primary-foreground" />
-          </span>
-        )}
-        {test.name} {gradingMode && <span> | {test.scale} </span>}
-      </span>
-    </div>
-  );
-}
-
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -243,7 +233,15 @@ import { useGetUserPublicInfo } from "../customhook/classCustomHooks";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FileComponent } from "./FileComponent";
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarClockIcon } from "lucide-react";
 const Schema = z
   .object({
     name: z
@@ -252,6 +250,9 @@ const Schema = z
       .max(30, { message: " Name is too long" }),
     scale: z.coerce.number(),
     isFinalize: z.boolean(),
+    isOnline: z.boolean(),
+    deadLine: z.date().optional(),
+    time: z.date().optional(),
   })
   .refine(
     (data) => {
@@ -296,6 +297,8 @@ function TestModal({
       newState[containerIndex].testid[testIndex].scale = formData.scale;
       newState[containerIndex].testid[testIndex].isFinalize =
         formData.isFinalize;
+      newState[containerIndex].testid[testIndex].isOnline = formData.isOnline;
+      newState[containerIndex].testid[testIndex].deadLine = formData.deadLine;
       return newState;
     });
     form.reset();
@@ -308,7 +311,20 @@ function TestModal({
     form.setValue("name", test.name);
     form.setValue("scale", test.scale);
     form.setValue("isFinalize", test.isFinalize);
-  }, [form, test.name, test.scale, open, test.isFinalize]);
+    form.setValue("isOnline", test.isOnline);
+    if (test.deadLine) {
+      form.setValue("deadLine", new Date(test.deadLine));
+    }
+  }, [
+    form,
+    test.name,
+    test.scale,
+    open,
+    test.isFinalize,
+    test.isOnline,
+    test.deadLine,
+  ]);
+  const isOnline = form.watch("isOnline");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -352,6 +368,83 @@ function TestModal({
                     </FormControl>
 
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {isOnline && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="deadLine"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Deadline </FormLabel>
+                        <FormControl>
+                          <div className="flex items-center space-x-2 mt-5 justify-center">
+                            <span className=" ml-3 font-semibold text-[0.8rem]">
+                              Before
+                            </span>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-auto p-0"
+                                align="center"
+                              >
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  // disabled={{ before: new Date() }}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              <FormField
+                control={form.control}
+                name="isOnline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Online test: </FormLabel>
+                    <FormControl>
+                      <div className="flex items-center space-x-2 mt-5 justify-center">
+                        <Checkbox
+                          id="checkBoxOnline"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+
+                        <label
+                          htmlFor="checkBoxOnline"
+                          className="text-[1rem] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Is online test ?
+                        </label>
+                      </div>
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -420,6 +513,7 @@ function GradeTestModal({
   findContainerGradePart,
   testId,
   isPublic,
+  isOnline,
 }: {
   name: string;
   children: ReactNode;
@@ -428,6 +522,7 @@ function GradeTestModal({
   setGradePartsSortable?: Dispatch<SetStateAction<GradePart[] | undefined>>;
   findContainerGradePart?: (id: UniqueIdentifier) => string | undefined;
   testId: string;
+  isOnline: boolean;
 }) {
   const form = useForm<SchemaDoTestType>({
     resolver: zodResolver(SchemaDoTest),
@@ -465,7 +560,6 @@ function GradeTestModal({
     setOpen(false);
   };
   const [open, setOpen] = useState(false);
-
   useEffect(() => {
     form.reset();
     form.setValue("point", doTest.point ? doTest.point : undefined);
@@ -473,7 +567,7 @@ function GradeTestModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className=" sm:max-w-[900px] ">
+      <DialogContent className={`${isPublic ? "sm:min-w-[800px]" : ""} `}>
         <DialogHeader>
           <DialogTitle className=" text-3xl">Test: {name} </DialogTitle>
         </DialogHeader>
@@ -484,7 +578,11 @@ function GradeTestModal({
               className="space-y-3"
               id={"changeTestInfo " + doTest.testId + doTest.studentId}
             >
-              <div className="grid grid-cols-[3fr_2fr] gap-4   ">
+              <div
+                className={`grid ${
+                  isPublic && "grid-cols-[3fr_2fr]"
+                } gap-4 items-center  `}
+              >
                 <div className="flex flex-col gap-3">
                   {isPublic && (
                     <div className="text-center ">
@@ -527,20 +625,24 @@ function GradeTestModal({
                       )}
                     </div>
                   )}
-                  <div className="w-full h-full p-5 scrollbar-thin border-solid border-2  overflow-auto rounded-lg"></div>
-                  <div className=" w-full  relative">
-                    <span
-                      contentEditable={true}
-                      role="textbox"
-                      className="   border-solid border-2 p-[0.5rem] px-[1.5rem] rounded-lg block overflow-hidden w-full  "
-                    />
+                  {isPublic && (
+                    <div className=" h-full flex-col flex gap-3">
+                      <div className="w-full min-h-[250px] h-full p-5 scrollbar-thin border-solid border-2  overflow-auto rounded-lg"></div>
+                      <div className=" w-full  relative ">
+                        <span
+                          contentEditable={true}
+                          role="textbox"
+                          className="   border-solid border-2 p-[0.5rem] px-[1.5rem] rounded-lg block overflow-hidden w-full  "
+                        />
 
-                    <span className=" absolute right-2 top-[2px]  bottom-[11px]  cursor-pointer  hover:bg-accent rounded-full p-2 ">
-                      {<SendHorizontal></SendHorizontal>}
-                    </span>
-                  </div>
+                        <span className=" absolute right-2 top-[2px]  bottom-[11px]  cursor-pointer  hover:bg-accent rounded-full p-2 ">
+                          {<SendHorizontal></SendHorizontal>}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex h-[300px]   flex-col gap-5 justify-center items-center">
+                <div className="flex h-fit   flex-col gap-3 justify-center items-center">
                   <div className=" bg-secondary py-4  w-full  p-2 rounded-lg flex flex-col gap-1 justify-center item-center">
                     <span className="font-semibold text-center text-[1.8rem]">
                       {studentInfo?.organizeId}
@@ -562,18 +664,20 @@ function GradeTestModal({
                       </div>
                     </div>
                   </div>
-                  <div className="  overflow-auto  scrollbar-thin  w-full rounded-lg border-dashed border-2 flex flex-col gap-2  p-4">
-                    <div className=" flex justify-center items-center flex-col gap-1">
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
-                      <FileComponent fileKey="asdasdasd" />
+                  {isOnline && (
+                    <div className="  h-[180px]  overflow-auto  scrollbar-thin  w-full rounded-lg border-dashed border-2 flex flex-col gap-2  p-4">
+                      <div className="  flex justify-center items-center flex-col gap-1">
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                        <FileComponent fileKey="asdasdasd" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <FormField
                     control={form.control}
                     name="point"

@@ -63,7 +63,7 @@ model GradePart {
   scale Float
   classID  String 
   sort Int?
-  class    Class   @relation(fields: [classID], references: [id])
+  class    Class   @relation(fields: [classID], references: [id] ,onDelete: Cascade)
   testid Test[]
 }
 
@@ -73,8 +73,8 @@ model DoTest{
   point Float?
   fileKeys  String[] 
   pendingGradeReview Boolean @default(false)
-  student    User   @relation(fields: [studentId], references: [id])
-  test Test   @relation(fields: [testId], references: [id])
+  student    User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  test Test   @relation(fields: [testId], references: [id], onDelete: Cascade)
   @@id([studentId, testId])
 }
 
@@ -85,7 +85,9 @@ model Test {
   gradePartId  String 
   sort Int?
   isFinalize Boolean @default(false)
-  gradePart    GradePart   @relation(fields: [gradePartId], references: [id])
+  isOnline Boolean @default(false)
+  deadLine DateTime?
+  gradePart    GradePart   @relation(fields: [gradePartId], references: [id] , onDelete: Cascade)
   doTest DoTest[]
 }
 

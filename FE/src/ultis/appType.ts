@@ -81,6 +81,8 @@ export type Test = {
   gradePartId: string;
   doTest: DoTest[];
   sort: number;
+  isOnline: boolean;
+  deadLine?: Date;
 };
 export type ExtraInfo = {
   "Student Id": string;
@@ -107,6 +109,7 @@ export const ClassTab = {
   share: "classShare" as const,
   roster: "classRosters" as const,
   grading: "classGrading" as const,
+  grade: "classGrade" as const,
   settings: "classSettings" as const,
 };
 export const DEFAULT_TAB = ClassTab.post;

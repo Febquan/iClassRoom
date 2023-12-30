@@ -21,7 +21,9 @@ const {
   changeMyStudentId,
   getClassGrade,
   checkIsTeacher,
+  checkIsStudent,
   postUpdateGrade,
+  getStudentGrade,
 } = require("../controller/userClassController");
 
 const router = express.Router();
@@ -47,6 +49,16 @@ router.post("/postComment", checkIsInClass, postComment);
 router.post("/changeMyStudentId", checkIsInClass, changeMyStudentId);
 router.post("/postClassExtraInfo", checkIsClassOwner, postStudentExtraInfo);
 router.get("/getClassGrade/:classId", checkIsTeacher, getClassGrade);
-router.post("/postUpdateGrade", checkIsTeacher, postUpdateGrade);
+router.post(
+  "/postUpdateGrade",
+  checkIsTeacher,
+  checkIsClassOwner,
+  postUpdateGrade
+);
+router.get(
+  "/getStudentGrade/:classId/:userId",
+  checkIsStudent,
+  getStudentGrade
+);
 
 module.exports = router;

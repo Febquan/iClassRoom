@@ -16,6 +16,7 @@ import { ClassTab, tabOptions as tabOptionsType } from "@/ultis/appType";
 import TeacherClassGrading from "./TeacherClassGrading";
 
 import { useGetClassRole } from "../customhook/classCustomHooks";
+import StudentClassGrade from "./StudentClassGrade";
 const tabOptions: tabOptionsType = [
   {
     icon: <Megaphone></Megaphone>,
@@ -34,6 +35,12 @@ const tabOptions: tabOptionsType = [
     id: ClassTab.roster,
     text: "Rosters",
     role: "all",
+  },
+  {
+    icon: <BookA></BookA>,
+    id: ClassTab.grade,
+    text: "Grade",
+    role: "student",
   },
   {
     icon: <BookA></BookA>,
@@ -65,6 +72,11 @@ export default function SpecificClass() {
       {role === "teacher" && (
         <PageContentItem tabName={ClassTab.grading}>
           <TeacherClassGrading></TeacherClassGrading>
+        </PageContentItem>
+      )}
+      {role === "student" && (
+        <PageContentItem tabName={ClassTab.grade}>
+          <StudentClassGrade></StudentClassGrade>
         </PageContentItem>
       )}
       <PageContentItem tabName={ClassTab.settings}>

@@ -86,3 +86,8 @@ export async function downloadFile(fileKey: string) {
 export function isSameContextObject(objectA: unknown, objectB: unknown) {
   return JSON.stringify(objectA) === JSON.stringify(objectB);
 }
+
+export function isOverTime(deadLine: Date | undefined) {
+  if (!deadLine) return false;
+  return new Date(deadLine) < new Date();
+}

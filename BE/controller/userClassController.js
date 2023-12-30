@@ -50,15 +50,7 @@ async function checkIsTeacher(req, res, next) {
       courseId: classId,
     },
   });
-  console.log(
-    "------",
-    req.params,
-    req.body,
-    classId,
-    enroll,
-    enroll.role,
-    enroll.role != "teacher"
-  );
+
   if (enroll.role != "teacher") {
     const error = new Error("User are not teacher of this class");
     error.statusCode = 401;
@@ -66,6 +58,25 @@ async function checkIsTeacher(req, res, next) {
   }
   next();
 }
+
+async function checkIsStudent(req, res, next) {
+  const user = req.user || req.session.user;
+  const classId = req.params.classId || req.body.classId;
+  const enroll = await prisma.userClass.findFirst({
+    where: {
+      userId: user.id,
+      courseId: classId,
+    },
+  });
+
+  if (enroll.role != "student") {
+    const error = new Error("User are not student of this class");
+    error.statusCode = 401;
+    return next(error);
+  }
+  next();
+}
+
 async function checkIsClassOwner(req, res, next) {
   const user = req.user || req.session.user;
   const { classId } = req.body;
@@ -225,20 +236,62 @@ async function acceptInvite(req, res) {
       hashedClassId,
       process.env.TOKEN_PRIVATE_KEY
     );
-    await prisma.userClass.create({
-      data: {
-        userId: userId,
-        courseId: classId,
-        role: role,
-        organizeId: studentClassId,
-      },
-    });
+    if (role == "teacher") {
+      await prisma.userClass.create({
+        data: {
+          userId: userId,
+          courseId: classId,
+          role: role,
+          organizeId: studentClassId,
+        },
+      });
+    }
+    if (role == "student") {
+      await prisma.$transaction(async (tx) => {
+        const classTests = await tx.gradePart.findMany({
+          where: {
+            classID: classId,
+          },
+          select: {
+            testid: true,
+          },
+        });
+        const testIds = classTests
+          .map((gradePart) => gradePart.testid.map((test) => test.id))
+          .flat();
+
+        await Promise.all(
+          testIds.map(async (testId) => {
+            return await tx.doTest.create({
+              data: {
+                test: {
+                  connect: { id: testId },
+                },
+                student: {
+                  connect: { id: userId },
+                },
+              },
+            });
+          })
+        );
+
+        await tx.userClass.create({
+          data: {
+            userId: userId,
+            courseId: classId,
+            role: role,
+            organizeId: studentClassId,
+          },
+        });
+      });
+    }
 
     res.json({
       success: true,
       link: `${process.env.BACKEND_URL}/user/class/invitelink/${hashedClassId}`,
     });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ success: false, error: error.message });
   }
 }
@@ -342,12 +395,36 @@ async function inviteEmails(req, res) {
 
 async function leaveClass(req, res) {
   const { userId, classId } = req.body;
-  console.log(userId, classId, "2222");
   try {
-    await prisma.userClass.delete({
-      where: {
-        userId_courseId: { userId, courseId: classId },
-      },
+    await prisma.$transaction(async (tx) => {
+      const classTests = await tx.gradePart.findMany({
+        where: {
+          classID: classId,
+        },
+        select: {
+          testid: true,
+        },
+      });
+      const testIds = classTests
+        .map((gradePart) => gradePart.testid.map((test) => test.id))
+        .flat();
+      await Promise.all(
+        testIds.map(async (testId) => {
+          return await tx.doTest.delete({
+            where: {
+              studentId_testId: {
+                studentId: userId,
+                testId: testId,
+              },
+            },
+          });
+        })
+      );
+      await tx.userClass.delete({
+        where: {
+          userId_courseId: { userId, courseId: classId },
+        },
+      });
     });
     res.json({
       success: true,
@@ -504,63 +581,52 @@ async function getClassGrade(req, res) {
 }
 
 async function postUpdateGrade(req, res) {
-  const { gradeParts, classId } = req.body;
-
-  const Tests = gradeParts.map((gradePart) => gradePart.testid).flat();
-
-  console.log("Tests", Tests);
-
-  const doTests = Tests.map((test) => test.doTest).flat();
-
-  console.log("doTests", doTests);
+  const { gradeParts: gradePartsNew, classId } = req.body;
 
   try {
     await prisma.$transaction(async (tx) => {
+      const gradePartsOld = await tx.gradePart.findMany({
+        where: {
+          classID: classId,
+        },
+      });
+      const oldGradePartsIds = gradePartsOld.map((gp) => gp.id);
+
+      await tx.gradePart.deleteMany({
+        where: {
+          id: {
+            in: oldGradePartsIds,
+          },
+        },
+      });
+
       await Promise.all(
-        doTests.map(async (doTestData) => {
-          console.log(doTestData.studentId, doTestData.testId, "lmao");
-          await tx.doTest.update({
-            where: {
-              studentId_testId: {
-                studentId: doTestData.studentId,
-                testId: doTestData.testId,
+        gradePartsNew.map(async ({ classID, ...gradePart }) => {
+          return await tx.gradePart.create({
+            data: {
+              ...gradePart,
+              class: {
+                connect: {
+                  id: classID,
+                },
               },
-            },
-            data: {
-              point: doTestData.point,
-              pendingGradeReview: doTestData.pendingGradeReview,
-            },
-          });
-        })
-      );
-
-      await Promise.all(
-        Tests.map(async (TestData) => {
-          await tx.Test.update({
-            where: {
-              id: TestData.id,
-            },
-            data: {
-              name: TestData.name,
-              scale: TestData.scale,
-              gradePartId: TestData.gradePartId,
-              sort: TestData.sort,
-              isFinalize: TestData.isFinalize,
-            },
-          });
-        })
-      );
-
-      await Promise.all(
-        gradeParts.map(async (gradePartData) => {
-          await tx.gradePart.update({
-            where: {
-              id: gradePartData.id,
-            },
-            data: {
-              name: gradePartData.name,
-              scale: gradePartData.scale,
-              sort: gradePartData.sort,
+              testid: {
+                create: gradePart.testid.map(
+                  ({ doTest, gradePartId, ...test }) => ({
+                    ...test,
+                    doTest: {
+                      create: doTest.map(({ studentId, testId, ...dot }) => ({
+                        ...dot,
+                        student: {
+                          connect: {
+                            id: studentId,
+                          },
+                        },
+                      })),
+                    },
+                  })
+                ),
+              },
             },
           });
         })
@@ -576,7 +642,55 @@ async function postUpdateGrade(req, res) {
   }
 }
 
+async function getStudentGrade(req, res) {
+  const { classId, userId } = req.params;
+  try {
+    const classRes = await prisma.class.findFirst({
+      where: {
+        id: classId,
+      },
+      include: {
+        gradePart: {
+          include: {
+            testid: {
+              include: {
+                doTest: {
+                  where: {
+                    studentId: userId,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const hideFinalize = classRes.gradePart.map((classGrade) => ({
+      ...classGrade,
+      testid: classGrade.testid.map((test) => ({
+        ...test,
+        doTest: [
+          {
+            ...test.doTest[0],
+            point: test.isFinalize ? test.doTest[0].point : null,
+          },
+        ],
+      })),
+    }));
+
+    res.json({
+      studentGrade: hideFinalize,
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
+  getStudentGrade,
   postUpdateGrade,
   createClass,
   getAllUserClass,
@@ -599,4 +713,5 @@ module.exports = {
   changeMyStudentId,
   getClassGrade,
   checkIsTeacher,
+  checkIsStudent,
 };

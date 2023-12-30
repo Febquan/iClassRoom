@@ -17,7 +17,6 @@ import {
   excludeField,
 } from "@/ultis/classFunctions";
 import { ArrowUpDown } from "lucide-react";
-import Spinner from "@/components/ui/spinner";
 
 const columns: ColumnDef<ClassToStudent>[] = [
   {
@@ -144,9 +143,14 @@ export default function ClassRosters() {
 
   let newColumn: (ColumnDef<ClassToStudent> | ColumnDef<ExtraTable>)[] = [];
   const map = mappingStudentId();
+  console.log(erorrMappedStudent, map);
+  // if (!map || !erorrMappedStudent) return <Spinner></Spinner>;
 
-  if (!map || !erorrMappedStudent) return <Spinner></Spinner>;
-  const mappedStudents = [...map, ...erorrMappedStudent];
+  const mappedStudents = [
+    ...(map ? map : []),
+    ...(erorrMappedStudent ? erorrMappedStudent : []),
+  ];
+
   if (extraInfo) {
     newColumn = [
       ...columns,

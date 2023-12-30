@@ -1,4 +1,4 @@
-import { GripVertical, PenBoxIcon, Plus } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import {
   Dispatch,
   HTMLAttributes,
@@ -39,6 +39,8 @@ const createtempTest = (
     gradePartId: gradePartId,
     sort: sort,
     isFinalize: false,
+    isOnline: false,
+    deadLine: undefined,
     doTest: [
       ...studentIds.map((studentId) => ({
         testId: testId,
@@ -129,18 +131,6 @@ export function GradePartComponent({
           >
             <GripVertical size={18}></GripVertical>
           </span>
-
-          <GratePartModal
-            gradePart={gradePart}
-            setGradePartsSortable={setGradePartsSortable}
-          >
-            <Button
-              variant="ghost"
-              className="h-5  hover:bg-green-500 text-secondary-foreground p-2 py-3 absolute left-2  top-[8px] "
-            >
-              <PenBoxIcon size={12} />
-            </Button>
-          </GratePartModal>
         </>
       )}
       <RowHeader containTest={true}>
@@ -151,11 +141,17 @@ export function GradePartComponent({
             "border-solid border-b-[6px] border-destructive"
           }`}
         >
-          <div className="flex gap-3 justify-center items-center">
+          <div className="flex gap-3 justify-center items-center cursor-pointer">
+            {!gradingMode && <span>{gradePart.name} </span>}
             <span className=" flex gap-2 justify-center  items-center">
-              {gradePart.name}
               {gradingMode && (
                 <>
+                  <GratePartModal
+                    gradePart={gradePart}
+                    setGradePartsSortable={setGradePartsSortable}
+                  >
+                    <span>{gradePart.name} </span>
+                  </GratePartModal>
                   <span> | {gradePart.scale} </span>
                   <span onClick={addTestToGradePart}>
                     <Plus

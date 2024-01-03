@@ -7,16 +7,19 @@ const {
   uploadFile,
   getFileStream,
   getS3PresignedUrl,
+  s3DeleteFiles,
 } = require("./../utils/s3");
 const { deleteFile } = require("./../utils/fileManager");
 const { MulterError } = require("multer");
 const upload = require("../utils/upload");
 const { promises } = require("nodemailer/lib/xoauth2");
 
+const { nanoid } = require("nanoid");
+console.log(nanoid(11));
 function HandleMulterError(req, res, next) {
   upload.array("files")(req, res, (err) => {
     if (err instanceof MulterError) {
-      return res.status(400).send("File size limit exceeded, 5 MB per file.");
+      return res.status(400).send("File size limit exceeded");
     } else if (err) {
       console.error(err);
       return res.status(500).send("Internal server error.");
@@ -27,7 +30,7 @@ function HandleMulterError(req, res, next) {
 }
 async function checkIsInClass(req, res, next) {
   const user = req.user || req.session.user;
-  const { classId } = req.params;
+  const { classId } = req.params.classId || req.body.classId;
   const enroll = await prisma.userClass.findFirst({
     where: {
       userId: user.id,
@@ -98,25 +101,14 @@ async function createClassPost(req, res) {
   try {
     // console.log(req.files, req.body, "alaoalaoalo");
     const { title, description, authorId, classId } = req.body;
-    const uploadPromises = req.files.map(async (file) => {
-      const res = await uploadFile(file);
-      deleteFile(file.path);
-      return res;
-    });
 
-    const responses = await Promise.all(uploadPromises);
-
-    const fileKeys = responses.map((uploadedFile) => {
-      console.log(uploadedFile.Key, "2222");
-      return uploadedFile.Key;
-    });
+    const fileKeys = await uploadAndGetFileKey(req.files);
     console.log(fileKeys);
     await prisma.post.create({
       data: {
         title,
         content: description,
         published: true,
-        isPrivate: false,
         fileKeys,
         author: {
           connect: {
@@ -142,6 +134,8 @@ async function createClass(req, res) {
       data: {
         className: className,
         createBy: userId,
+        joinCodeStudent: nanoid(11),
+        joinCodeTeacher: nanoid(11),
         haveStudent: {
           create: {
             userId: userId,
@@ -185,6 +179,78 @@ async function getAllUserClass(req, res) {
       },
     });
     res.json({ success: true, classes });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function joinByCode(req, res) {
+  try {
+    const { code, userId } = req.body;
+    let classInfo = await prisma.class.findFirst({
+      where: {
+        OR: [{ joinCodeStudent: code }, { joinCodeTeacher: code }],
+      },
+    });
+    if (!classInfo) {
+      throw new Error("Invalid Code");
+    }
+    let joinInfo = await prisma.userClass.findFirst({
+      where: {
+        userId: userId,
+        courseId: classInfo.id,
+      },
+    });
+    if (joinInfo) {
+      throw new Error("You are already in this class");
+    }
+    let role = classInfo.joinCodeStudent == code ? "student" : "teacher";
+
+    await joinClass(role, userId, classInfo.id, "");
+
+    res.json({
+      success: true,
+      code: classInfo.joinCodeStudent,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+async function getStudentInviteCode(req, res) {
+  try {
+    const { classId } = req.params;
+    let classInfo = await prisma.class.findFirst({
+      where: {
+        id: classId,
+      },
+      select: {
+        joinCodeStudent: true,
+      },
+    });
+    res.json({
+      success: true,
+      code: classInfo.joinCodeStudent,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function getTeacherInviteCode(req, res) {
+  try {
+    const { classId } = req.params;
+    let classInfo = await prisma.class.findFirst({
+      where: {
+        id: classId,
+      },
+      select: {
+        joinCodeTeacher: true,
+      },
+    });
+    res.json({
+      success: true,
+      code: classInfo.joinCodeTeacher,
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
@@ -236,8 +302,57 @@ async function acceptInvite(req, res) {
       hashedClassId,
       process.env.TOKEN_PRIVATE_KEY
     );
-    if (role == "teacher") {
-      await prisma.userClass.create({
+    await joinClass(role, userId, classId, studentClassId);
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function joinClass(role, userId, classId, studentClassId) {
+  if (role == "teacher") {
+    await prisma.userClass.create({
+      data: {
+        userId: userId,
+        courseId: classId,
+        role: role,
+        organizeId: studentClassId,
+      },
+    });
+  }
+  if (role == "student") {
+    await prisma.$transaction(async (tx) => {
+      const classTests = await tx.gradePart.findMany({
+        where: {
+          classID: classId,
+        },
+        select: {
+          testid: true,
+        },
+      });
+      const testIds = classTests
+        .map((gradePart) => gradePart.testid.map((test) => test.id))
+        .flat();
+
+      await Promise.all(
+        testIds.map(async (testId) => {
+          return await tx.doTest.create({
+            data: {
+              test: {
+                connect: { id: testId },
+              },
+              student: {
+                connect: { id: userId },
+              },
+            },
+          });
+        })
+      );
+
+      await tx.userClass.create({
         data: {
           userId: userId,
           courseId: classId,
@@ -245,54 +360,7 @@ async function acceptInvite(req, res) {
           organizeId: studentClassId,
         },
       });
-    }
-    if (role == "student") {
-      await prisma.$transaction(async (tx) => {
-        const classTests = await tx.gradePart.findMany({
-          where: {
-            classID: classId,
-          },
-          select: {
-            testid: true,
-          },
-        });
-        const testIds = classTests
-          .map((gradePart) => gradePart.testid.map((test) => test.id))
-          .flat();
-
-        await Promise.all(
-          testIds.map(async (testId) => {
-            return await tx.doTest.create({
-              data: {
-                test: {
-                  connect: { id: testId },
-                },
-                student: {
-                  connect: { id: userId },
-                },
-              },
-            });
-          })
-        );
-
-        await tx.userClass.create({
-          data: {
-            userId: userId,
-            courseId: classId,
-            role: role,
-            organizeId: studentClassId,
-          },
-        });
-      });
-    }
-
-    res.json({
-      success: true,
-      link: `${process.env.BACKEND_URL}/user/class/invitelink/${hashedClassId}`,
     });
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({ success: false, error: error.message });
   }
 }
 
@@ -319,6 +387,11 @@ async function getClassInviteInfo(req, res) {
   }
 }
 
+function exclude(user, keys) {
+  return Object.fromEntries(
+    Object.entries(user).filter(([key]) => !keys.includes(key))
+  );
+}
 async function getClassContent(req, res) {
   try {
     const classId = req.params.classId;
@@ -346,6 +419,7 @@ async function getClassContent(req, res) {
         },
       },
     });
+    classInfo = exclude(classInfo, ["joinCodeStudent", "joinCodeTeacher"]);
     res.json({ success: true, classInfo });
   } catch (error) {
     console.log(error);
@@ -565,6 +639,15 @@ async function getClassGrade(req, res) {
             testid: {
               include: {
                 doTest: true,
+                content: {
+                  include: {
+                    receiver: {
+                      include: {
+                        comments: true,
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -580,18 +663,53 @@ async function getClassGrade(req, res) {
   }
 }
 
+function omit(key, obj) {
+  const { [key]: omitted, ...rest } = obj;
+  return rest;
+}
+
 async function postUpdateGrade(req, res) {
-  const { gradeParts: gradePartsNew, classId } = req.body;
+  const { gradeParts, classId, testAndNewFile, deleteFiles } = req.body;
+  const gradePartsNew = JSON.parse(gradeParts);
+  const testNewFile = JSON.parse(testAndNewFile);
+  const deletedFiles = JSON.parse(deleteFiles);
+  const changedTestId = testNewFile.map((test) => test.testId);
+  console.log(changedTestId, "-----");
 
   try {
     await prisma.$transaction(async (tx) => {
+      // const fileKeys = uploadAndGetFileKey()
+
+      const fileKeys = await uploadAndGetFileKey(req.files); //newfiles
+
       const gradePartsOld = await tx.gradePart.findMany({
         where: {
           classID: classId,
         },
+        include: {
+          testid: {
+            include: {
+              content: true,
+            },
+          },
+        },
       });
       const oldGradePartsIds = gradePartsOld.map((gp) => gp.id);
 
+      //get old file then delete old file then add newfiles
+      const willChangedFiles = gradePartsOld
+        .map((gp) => gp.testid)
+        .flat()
+        .filter((test) => changedTestId.includes(test.id))
+        .map((test) => test.content.fileKeys)
+        .flat();
+      console.log(willChangedFiles);
+      if (willChangedFiles.length > 0) {
+        await s3DeleteFiles(willChangedFiles);
+      }
+      if (deletedFiles.length > 0) {
+        await s3DeleteFiles(deletedFiles);
+      }
       await tx.gradePart.deleteMany({
         where: {
           id: {
@@ -614,6 +732,47 @@ async function postUpdateGrade(req, res) {
                 create: gradePart.testid.map(
                   ({ doTest, gradePartId, ...test }) => ({
                     ...test,
+                    content: {
+                      create: {
+                        ...omit("testId", omit("classId", test.content)),
+                        class: {
+                          connect: {
+                            id: test.content.classId,
+                          },
+                        },
+                        fileKeys: changedTestId.includes(test.id)
+                          ? [
+                              ...fileKeys.filter(
+                                (fileKey) => getTestIdOfFile(fileKey) == test.id
+                              ),
+                            ]
+                          : test.content.fileKeys,
+                        receiver: {
+                          create: test.content.receiver.map(
+                            ({ receiverId, contentId, comments, ...rv }) => ({
+                              ...rv,
+                              receiver: {
+                                connect: {
+                                  id: receiverId,
+                                },
+                              },
+                              comments: {
+                                create: comments.map(
+                                  ({ id, authorId, postId, ...cm }) => ({
+                                    ...cm,
+                                    author: {
+                                      connect: {
+                                        id: authorId,
+                                      },
+                                    },
+                                  })
+                                ),
+                              },
+                            })
+                          ),
+                        },
+                      },
+                    },
                     doTest: {
                       create: doTest.map(({ studentId, testId, ...dot }) => ({
                         ...dot,
@@ -654,6 +813,18 @@ async function getStudentGrade(req, res) {
           include: {
             testid: {
               include: {
+                content: {
+                  include: {
+                    receiver: {
+                      where: {
+                        receiverId: userId,
+                      },
+                      include: {
+                        comments: true,
+                      },
+                    },
+                  },
+                },
                 doTest: {
                   where: {
                     studentId: userId,
@@ -689,6 +860,102 @@ async function getStudentGrade(req, res) {
   }
 }
 
+async function submitTest(req, res) {
+  const { testId } = req.body;
+  const user = req.user || req.session.user;
+  const studentId = user.id;
+  await prisma.$transaction(async (tx) => {
+    const doTestInfo = await tx.doTest.findFirst({
+      where: {
+        testId: testId,
+      },
+    });
+    if (studentId !== doTestInfo.studentId) {
+      throw new Error("Student credential is not valid");
+    }
+    if (doTestInfo) {
+      const oldFileKKeys = doTestInfo.fileKeys;
+      if (oldFileKKeys.length > 0) {
+        await s3DeleteFiles(oldFileKKeys);
+      }
+    }
+    const fileKeys = await uploadAndGetFileKey(req.files);
+    await tx.doTest.update({
+      where: {
+        studentId_testId: {
+          studentId: studentId,
+          testId: testId,
+        },
+      },
+      data: {
+        fileKeys: fileKeys,
+      },
+    });
+  });
+  try {
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function requestGradeReview(req, res) {
+  const { testId } = req.body;
+  const user = req.user || req.session.user;
+  const studentId = user.id;
+  await prisma.doTest.update({
+    where: {
+      studentId_testId: {
+        studentId: studentId,
+        testId: testId,
+      },
+    },
+    data: {
+      pendingGradeReview: true,
+    },
+  });
+  try {
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function postTestComment(req, res) {
+  const { postId, content } = req.body;
+  const user = req.user || req.session.user;
+  const authorId = user.id;
+  await prisma.privateCommentTest.create({
+    data: {
+      content,
+      postComment: {
+        connect: {
+          id: postId,
+        },
+      },
+      author: {
+        connect: {
+          id: authorId,
+        },
+      },
+    },
+  });
+  try {
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   getStudentGrade,
   postUpdateGrade,
@@ -714,4 +981,39 @@ module.exports = {
   getClassGrade,
   checkIsTeacher,
   checkIsStudent,
+  submitTest,
+  requestGradeReview,
+  postTestComment,
+  getStudentInviteCode,
+  getTeacherInviteCode,
+  joinByCode,
 };
+
+//helper
+const uploadAndGetFileKey = async (files) => {
+  const uploadPromises = files.map(async (file) => {
+    const res = await uploadFile(file);
+    deleteFile(file.path);
+    return res;
+  });
+  const responses = await Promise.all(uploadPromises);
+  const fileKeys = responses.map((uploadedFile) => {
+    return uploadedFile.Key;
+  });
+  return fileKeys;
+};
+
+function getTestIdOfFile(filekeys) {
+  const start = getPosition(filekeys, "-", 2);
+  const end = getPosition(filekeys, "-", 7);
+  return filekeys.substring(start + 1, end);
+}
+function getFileNameOfTest(filekeys) {
+  const start = getPosition(filekeys, "-", 7);
+
+  return filekeys.substring(start + 1);
+}
+
+function getPosition(string, subString, index) {
+  return string.split(subString, index).join(subString).length;
+}

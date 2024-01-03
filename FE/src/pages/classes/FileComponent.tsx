@@ -1,8 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { File } from "lucide-react";
-import { downloadFile, getFileName } from "@/ultis/classFunctions";
+import {
+  downloadFile,
+  getFileName,
+  getFileNameOfTest,
+} from "@/ultis/classFunctions";
 
-export const FileComponent = ({ fileKey }: { fileKey: string }) => {
+export const FileComponent = ({
+  fileKey,
+  isTestFile,
+}: {
+  fileKey: string;
+  isTestFile?: boolean;
+}) => {
   return (
     <div>
       <Badge
@@ -13,7 +23,10 @@ export const FileComponent = ({ fileKey }: { fileKey: string }) => {
         }}
       >
         <File size={20}></File>
-        <span> {getFileName(fileKey)} </span>
+        <span>
+          {" "}
+          {isTestFile ? getFileNameOfTest(fileKey) : getFileName(fileKey)}{" "}
+        </span>
       </Badge>
     </div>
   );

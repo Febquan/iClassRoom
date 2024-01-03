@@ -24,6 +24,12 @@ const {
   checkIsStudent,
   postUpdateGrade,
   getStudentGrade,
+  submitTest,
+  requestGradeReview,
+  postTestComment,
+  getStudentInviteCode,
+  getTeacherInviteCode,
+  joinByCode,
 } = require("../controller/userClassController");
 
 const router = express.Router();
@@ -32,6 +38,8 @@ router.get("/getAllClass/:userId", getAllUserClass);
 router.get("/getClassInviteInfo/:hashedClassId", getClassInviteInfo);
 router.get("/getStudentInviteLink/:classId", getStudentInviteLink);
 router.get("/getTeacherInviteLink/:classId", getTeacherInviteLink);
+router.get("/getStudentInviteCode/:classId", getStudentInviteCode);
+router.get("/getTeacherInviteCode/:classId", getTeacherInviteCode);
 router.post("/acceptInvite", acceptInvite);
 router.get("/getClassContent/:classId", checkIsInClass, getClassContent);
 router.post(
@@ -51,6 +59,7 @@ router.post("/postClassExtraInfo", checkIsClassOwner, postStudentExtraInfo);
 router.get("/getClassGrade/:classId", checkIsTeacher, getClassGrade);
 router.post(
   "/postUpdateGrade",
+  HandleMulterError,
   checkIsTeacher,
   checkIsClassOwner,
   postUpdateGrade
@@ -60,5 +69,8 @@ router.get(
   checkIsStudent,
   getStudentGrade
 );
-
+router.post("/submitTest", HandleMulterError, checkIsStudent, submitTest);
+router.post("/requestGradeReview", checkIsStudent, requestGradeReview);
+router.post("/postTestComment", checkIsInClass, postTestComment);
+router.post("/joinByCode", joinByCode);
 module.exports = router;

@@ -34,10 +34,7 @@ export type Post = {
   title: string;
   content: string;
   authorId: string;
-  isPrivate: boolean;
   fileKeys: string[];
-  receiverId?: string;
-
   comments: Comment[];
 };
 export type Student = {
@@ -53,6 +50,7 @@ export type ClassToStudent = {
   student: Student;
 };
 export type Comment = {
+  id: string;
   postId: string;
   authorId: string;
   content: string;
@@ -83,9 +81,43 @@ export type Test = {
   sort: number;
   isOnline: boolean;
   deadLine?: Date;
+  content: TestContent;
 };
+
+export type TestContent = {
+  id: string;
+  createdAt?: string;
+  updatedAt?: string;
+  content: string;
+  title: string;
+  fileKeys: string[];
+  files?: File[];
+  classId: string;
+  receiver: PrivateTestPostReceiver[];
+};
+
+export type PrivateTestPostReceiver = {
+  id: string;
+  receiverId: string;
+  contentId: string;
+  comments: PrivateCommentTest[];
+};
+
+export type PrivateCommentTest = {
+  id: string;
+  createdAt: string;
+  authorId: string;
+  content: string;
+  postId: string;
+};
+
 export type ExtraInfo = {
   "Student Id": string;
+};
+
+export type FileTestPointUpload = {
+  "Student Id": string;
+  Point: number;
 };
 
 export type DynamicObject = {

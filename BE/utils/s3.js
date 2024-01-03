@@ -3,7 +3,11 @@ const fs = require("fs");
 
 const { Upload } = require("@aws-sdk/lib-storage");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { S3, GetObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  S3,
+  GetObjectCommand,
+  DeleteObjectsCommand,
+} = require("@aws-sdk/client-s3");
 
 const bucketName = process.env.AWS_BUCKET_NAME;
 const region = process.env.AWS_BUCKET_REGION;
@@ -64,3 +68,15 @@ const getFileName = (key) => {
   return key.substring(pos + 1);
 };
 exports.getS3PresignedUrl = getS3PresignedUrl;
+
+const deleteMultipleFiles = async (filekeys) => {
+  const params = {
+    Bucket: bucketName,
+    Delete: {
+      Objects: filekeys.map((key) => ({ Key: key })),
+    },
+  };
+
+  await s3.send(new DeleteObjectsCommand(params));
+};
+exports.s3DeleteFiles = deleteMultipleFiles;

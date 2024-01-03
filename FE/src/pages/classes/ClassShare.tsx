@@ -50,6 +50,10 @@ export function ClassShare() {
   return (
     <div className=" flex flex-col gap-8 w-full justify-center items-center">
       <div className=" h-fit xl:w-[50rem]  w-full border-solid border-2 p-[3rem] rounded-lg">
+        <ShareByCode isOwnnerOrTeacher={isOwnnerOrTeacher}></ShareByCode>
+      </div>
+
+      <div className=" h-fit xl:w-[50rem]  w-full border-solid border-2 p-[3rem] rounded-lg">
         <ShareByLink isOwnnerOrTeacher={isOwnnerOrTeacher}></ShareByLink>
       </div>
       {isOwnnerOrTeacher && (
@@ -248,8 +252,8 @@ function EmailInvite({
 function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
   const classId = useGetClassId();
   const { toast } = useToast();
-  const [studentInviteLink, setStudentInviteLink] = useState("");
-  const [teacherInviteLink, setTeacherInviteLink] = useState("");
+  const [studentCode, setStudentCode] = useState("");
+  const [teacherCode, setTeacherCode] = useState("");
   const getInviteLink = useCallback(() => {
     let apiArray = [
       api.get(`user/class/getStudentInviteLink/${classId}`),
@@ -261,9 +265,9 @@ function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
 
     Promise.all(apiArray)
       .then((values) => {
-        setStudentInviteLink(values[0].data.link);
+        setStudentCode(values[0].data.link);
         if (isOwnnerOrTeacher) {
-          setTeacherInviteLink(values[1].data.link);
+          setTeacherCode(values[1].data.link);
         }
       })
       .catch((err) => {
@@ -290,13 +294,13 @@ function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
           Invite link for students :
         </Label>
         <div className="flex flex-1 gap-2">
-          <Input id="link" readOnly value={studentInviteLink} />
+          <Input id="link" readOnly value={studentCode} />
           <Button
             type="submit"
             size="sm"
             className="px-3"
             onClick={() => {
-              navigator.clipboard.writeText(studentInviteLink);
+              navigator.clipboard.writeText(studentCode);
               toast({
                 description: "Copied invite link for students !",
                 duration: 2000,
@@ -318,7 +322,7 @@ function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
             <Input
               id="link"
               readOnly
-              value={teacherInviteLink}
+              value={teacherCode}
               disabled={!isOwnnerOrTeacher}
             />
             <Button
@@ -327,9 +331,109 @@ function ShareByLink({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
               size="sm"
               className="px-3"
               onClick={() => {
-                navigator.clipboard.writeText(teacherInviteLink);
+                navigator.clipboard.writeText(teacherCode);
                 toast({
                   description: "Copied invite link for teachers !",
+                  duration: 2000,
+                  dir: "left",
+                });
+              }}
+            >
+              <span className="sr-only">Copy</span>
+              <CopyIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShareByCode({ isOwnnerOrTeacher }: { isOwnnerOrTeacher: boolean }) {
+  const classId = useGetClassId();
+  const { toast } = useToast();
+  const [studentCode, setStudentCode] = useState("");
+  const [teacherCode, setTeacherCode] = useState("");
+  const getInvitecode = useCallback(() => {
+    let apiArray = [
+      api.get(`user/class/getStudentInviteCode/${classId}`),
+      api.get(`user/class/getTeacherInviteCode/${classId}`),
+    ];
+    if (!isOwnnerOrTeacher) {
+      apiArray = [api.get(`user/class/getStudentInviteCode/${classId}`)];
+    }
+
+    Promise.all(apiArray)
+      .then((values) => {
+        setStudentCode(values[0].data.code);
+        if (isOwnnerOrTeacher) {
+          setTeacherCode(values[1].data.code);
+        }
+      })
+      .catch((err) => {
+        toast({
+          variant: "destructive",
+          title: "Uh oh! Something went wrong.",
+          description: "There was a problem with your request to the server.",
+          duration: Infinity,
+        });
+        console.log(err);
+      });
+  }, [classId, isOwnnerOrTeacher, toast]);
+  useEffect(() => {
+    getInvitecode();
+  }, [getInvitecode, isOwnnerOrTeacher]);
+
+  return (
+    <div className="w-full  flex items-center relative  flex-col gap-4">
+      <h1 className="scroll-m-20 text-2xl font-bold tracking-tight ">
+        Share by code
+      </h1>
+      <div className="w-full  ">
+        <Label htmlFor="code" className="">
+          Invite code for students :
+        </Label>
+        <div className="flex flex-1 gap-2">
+          <Input id="code" readOnly value={studentCode} />
+          <Button
+            type="submit"
+            size="sm"
+            className="px-3"
+            onClick={() => {
+              navigator.clipboard.writeText(studentCode);
+              toast({
+                description: "Copied invite code for students !",
+                duration: 2000,
+              });
+            }}
+          >
+            <span className="sr-only">Copy</span>
+            <CopyIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {isOwnnerOrTeacher && (
+        <div className="w-full">
+          <Label htmlFor="code" className="">
+            Invite code for teachers :
+          </Label>
+          <div className="flex flex-1 gap-2">
+            <Input
+              id="code"
+              readOnly
+              value={teacherCode}
+              disabled={!isOwnnerOrTeacher}
+            />
+            <Button
+              disabled={!isOwnnerOrTeacher}
+              type="submit"
+              size="sm"
+              className="px-3"
+              onClick={() => {
+                navigator.clipboard.writeText(teacherCode);
+                toast({
+                  description: "Copied invite code for teachers !",
                   duration: 2000,
                   dir: "left",
                 });

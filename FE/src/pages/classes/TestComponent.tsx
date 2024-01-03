@@ -14,16 +14,23 @@ import {
   ReactNode,
   SetStateAction,
   useEffect,
+  useRef,
   useState,
 } from "react";
-import { DoTest, GradePart, Test } from "@/ultis/appType";
+import {
+  DoTest,
+  FileTestPointUpload,
+  GradePart,
+  MyError,
+  Test,
+} from "@/ultis/appType";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Row } from "./MyTableAtom";
-import { orderDoTest } from "@/ultis/classFunctions";
+import { orderDoTest, sortByTime } from "@/ultis/classFunctions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
+import Comment from "./Comment";
 export function TestComponent({
   id,
   test,
@@ -95,31 +102,34 @@ export function TestComponent({
         `}
       >
         <div className="flex gap-1 justify-center items-center">
-          <TestModal
-            test={test}
-            setGradePartsSortable={setGradePartsSortable}
-            findContainerGradePart={findContainerGradePart}
-          >
-            <span className=" flex gap-2 justify-center items-center">
-              {gradingMode && test.isFinalize && (
-                <span className="bg-primary rounded-full p-[2px] w-5 h-5 flex  justify-center items-center">
-                  <CheckCheckIcon className="text-primary-foreground" />
-                </span>
-              )}
-              {gradingMode &&
-                test.isOnline &&
-                test.deadLine &&
-                (new Date(test.deadLine) > new Date() ? (
-                  <CalendarClockIcon
-                    size={18}
-                    className=" text-secondary-foreground"
-                  />
-                ) : (
-                  <CalendarClockIcon size={18} className=" text-primary " />
-                ))}
-              {test.name} {gradingMode && <span> | {test.scale} </span>}
-            </span>
-          </TestModal>
+          {gradingMode && (
+            <TestModal
+              test={test}
+              setGradePartsSortable={setGradePartsSortable}
+              findContainerGradePart={findContainerGradePart}
+            >
+              <span className=" flex gap-2 justify-center items-center">
+                {gradingMode && test.isFinalize && (
+                  <span className="bg-primary rounded-full p-[2px] w-5 h-5 flex  justify-center items-center">
+                    <CheckCheckIcon className="text-primary-foreground" />
+                  </span>
+                )}
+                {gradingMode &&
+                  test.isOnline &&
+                  test.deadLine &&
+                  (new Date(test.deadLine) > new Date() ? (
+                    <CalendarClockIcon
+                      size={18}
+                      className=" text-secondary-foreground"
+                    />
+                  ) : (
+                    <CalendarClockIcon size={18} className=" text-primary " />
+                  ))}
+                {test.name} {gradingMode && <span> | {test.scale} </span>}
+              </span>
+            </TestModal>
+          )}
+          {!gradingMode && <span>{test.name}</span>}
         </div>
       </div>
       <div>
@@ -142,6 +152,7 @@ export function TestComponent({
                 <GradeTestModal
                   name={test.name}
                   doTest={el}
+                  test={test}
                   setGradePartsSortable={setGradePartsSortable}
                   findContainerGradePart={findContainerGradePart}
                   testId={test.id}
@@ -175,6 +186,7 @@ export function TestComponent({
                       testId={test.id}
                       isPublic={test.isFinalize}
                       isOnline={test.isOnline}
+                      test={test}
                     >
                       <Button variant="outline" className="h-5 p-2 py-3  ">
                         <>
@@ -213,6 +225,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -229,7 +242,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useGetUserPublicInfo } from "../customhook/classCustomHooks";
+import {
+  useGetClassExtraInfo,
+  useGetClassId,
+  useGetUserPublicInfo,
+  useUserClassClassify,
+} from "../customhook/classCustomHooks";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FileComponent } from "./FileComponent";
@@ -242,6 +260,17 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarClockIcon } from "lucide-react";
+
+import TextEditor from "./TextEditor";
+import Dropzone from "@/ultis/DropZone";
+import { TimePicker } from "@/components/ui/time-picker";
+import api from "@/axios/axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/use-toast";
+import Spinner from "@/components/ui/spinner";
+import { Label } from "@/components/ui/label";
+import * as XLSX from "xlsx";
+import FormError from "./FormError";
 const Schema = z
   .object({
     name: z
@@ -252,7 +281,12 @@ const Schema = z
     isFinalize: z.boolean(),
     isOnline: z.boolean(),
     deadLine: z.date().optional(),
+    content: z
+      .string()
+      .max(2000, { message: "Your description is too long" })
+      .optional(),
     time: z.date().optional(),
+    files: z.array(z.instanceof(File)).optional(),
   })
   .refine(
     (data) => {
@@ -264,6 +298,11 @@ const Schema = z
     }
   );
 type SchemaType = z.infer<typeof Schema>;
+
+const SchemaUploadPoint = z.object({
+  files: z.array(z.instanceof(File)).optional(),
+});
+type SchemaUploadPointType = z.infer<typeof SchemaUploadPoint>;
 
 function TestModal({
   children,
@@ -279,13 +318,19 @@ function TestModal({
   const form = useForm<SchemaType>({
     resolver: zodResolver(Schema),
   });
+  const formUploadTestPoint = useForm<SchemaUploadPointType>({
+    resolver: zodResolver(SchemaUploadPoint),
+  });
+  const extraInfo = useGetClassExtraInfo();
+  const { students } = useUserClassClassify();
+  const isOnline = form.watch("isOnline");
+  const uploadTestFile = formUploadTestPoint.watch("files");
 
   const onChangeInfo = (formData: SchemaType) => {
-    console.log(formData, setGradePartsSortable);
     if (!setGradePartsSortable) return;
     setGradePartsSortable((oldValue) => {
       if (!oldValue || !findContainerGradePart) return;
-      const newState: GradePart[] = JSON.parse(JSON.stringify(oldValue));
+      const newState: GradePart[] = window.structuredClone(oldValue);
       const containerIndex = oldValue.findIndex(
         (el) => el.id === findContainerGradePart(test.id)
       );
@@ -299,8 +344,35 @@ function TestModal({
         formData.isFinalize;
       newState[containerIndex].testid[testIndex].isOnline = formData.isOnline;
       newState[containerIndex].testid[testIndex].deadLine = formData.deadLine;
+      if (formData.content) {
+        newState[containerIndex].testid[testIndex].content.content =
+          formData.content;
+      }
+      newState[containerIndex].testid[testIndex].content.files = formData.files;
+
+      // handle upload file
+      if (!uploadPoint || !extraInfo || !students) return;
+      const mapping: Record<string, string> = {};
+      students.forEach(
+        (student) => (mapping[student.organizeId as string] = student.userId)
+      );
+
+      for (const studentPoint of uploadPoint) {
+        const index = newState[containerIndex].testid[
+          testIndex
+        ].doTest.findIndex(
+          (dt) => dt.studentId == mapping[String(studentPoint["Student Id"])]
+        );
+        if (index == -1) {
+          continue;
+        }
+        newState[containerIndex].testid[testIndex].doTest[index].point =
+          studentPoint.Point;
+      }
+
       return newState;
     });
+
     form.reset();
     setOpen(false);
   };
@@ -315,6 +387,12 @@ function TestModal({
     if (test.deadLine) {
       form.setValue("deadLine", new Date(test.deadLine));
     }
+    if (test.content) {
+      form.setValue("content", test.content.content);
+    }
+    if (test.content.files) {
+      form.setValue("files", test.content.files);
+    }
   }, [
     form,
     test.name,
@@ -323,19 +401,99 @@ function TestModal({
     test.isFinalize,
     test.isOnline,
     test.deadLine,
+    test.content,
   ]);
-  const isOnline = form.watch("isOnline");
+  //check file type
+  const [isValidKeys, setIsValid] = useState<boolean>(true);
+  const [uploadPoint, setUploadPoint] = useState<FileTestPointUpload[]>();
+
+  useEffect(() => {
+    //update point
+    const reader = new FileReader();
+    if (uploadTestFile?.length == 0 || !uploadTestFile) {
+      return;
+    }
+    reader.readAsBinaryString(uploadTestFile[0]);
+    reader.onload = (e) => {
+      const data = e.target?.result;
+      const workbook = XLSX.read(data, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const parsedData: FileTestPointUpload[] = XLSX.utils.sheet_to_json(sheet);
+      const fields = Object.keys(parsedData[0]);
+      setIsValid(fields.includes("Student Id") && fields.includes("Point"));
+      setUploadPoint(parsedData);
+      //  console.log(
+      //    parsedData,
+      //    "lsussussususu"
+      //  );
+    };
+  }, [uploadPoint, uploadTestFile]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <div className="grid gap-4 py-4">
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onChangeInfo)}
-              className="space-y-3"
-              id={"changeTestInfo " + test.id}
-            >
+      <DialogContent
+        className={` ${isOnline ? "sm:max-w-[925px]" : "sm:max-w-[425px]"} `}
+      >
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onChangeInfo)}
+            className={`space-y-3  grid ${
+              isOnline ? "grid-cols-[3fr_2fr]" : ""
+            } gap-5 items-center`}
+            id={"changeTestInfo " + test.id}
+          >
+            <div className=" flex flex-col gap-4 items-center justify-center relative h-full">
+              <div className=" flex  flex-col  gap-3 self-stretch ">
+                {isOnline && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="content"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <TextEditor
+                              content={field.value}
+                              onChange={field.onChange}
+                            ></TextEditor>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="files"
+                      render={() => (
+                        <>
+                          <FormLabel>Change or add files: </FormLabel>
+                          <Dropzone multiple={true} form={form}></Dropzone>
+                        </>
+                      )}
+                    />
+                    <div>
+                      <FormLabel>Existing files: </FormLabel>
+                      <div className=" flex flex-wrap gap-2 border-solid border-2 h-fit p-2 rounded-md ">
+                        {test.content.fileKeys.length > 0 ? (
+                          test.content.fileKeys.map((key, i) => (
+                            <FileComponent
+                              fileKey={key}
+                              key={i}
+                              isTestFile={true}
+                            />
+                          ))
+                        ) : (
+                          <span>Empty </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
               <FormField
                 control={form.control}
                 name="name"
@@ -371,6 +529,7 @@ function TestModal({
                   </FormItem>
                 )}
               />
+
               {isOnline && (
                 <>
                   <FormField
@@ -395,7 +554,10 @@ function TestModal({
                                     )}
                                   >
                                     {field.value ? (
-                                      format(field.value, "PPP")
+                                      format(
+                                        field.value,
+                                        "hh:mm:ss aa dd/MM/yyyy"
+                                      )
                                     ) : (
                                       <span>Pick a date</span>
                                     )}
@@ -414,6 +576,12 @@ function TestModal({
                                   // disabled={{ before: new Date() }}
                                   initialFocus
                                 />
+                                <div className="p-3 border-t border-border">
+                                  <TimePicker
+                                    setDate={field.onChange}
+                                    date={field.value}
+                                  />
+                                </div>
                               </PopoverContent>
                             </Popover>
                           </div>
@@ -423,62 +591,99 @@ function TestModal({
                   />
                 </>
               )}
-              <FormField
-                control={form.control}
-                name="isOnline"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Online test: </FormLabel>
-                    <FormControl>
-                      <div className="flex items-center space-x-2 mt-5 justify-center">
-                        <Checkbox
-                          id="checkBoxOnline"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+              <div>
+                <FormField
+                  control={form.control}
+                  name="isOnline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Online test: </FormLabel>
+                      <FormControl>
+                        <div className="flex items-center space-x-2 mt-5 justify-center">
+                          <Checkbox
+                            id="checkBoxOnline"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
 
-                        <label
-                          htmlFor="checkBoxOnline"
-                          className="text-[1rem] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Is online test ?
-                        </label>
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                          <label
+                            htmlFor="checkBoxOnline"
+                            className="text-[1rem] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Is online test ?
+                          </label>
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="isFinalize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="flex items-center space-x-2 mt-5 justify-center">
-                        <Checkbox
-                          id="checkBoxFinalize"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+                <FormField
+                  control={form.control}
+                  name="isFinalize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="flex items-center space-x-2 mt-5 justify-center">
+                          <Checkbox
+                            id="checkBoxFinalize"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
 
-                        <label
-                          htmlFor="checkBoxFinalize"
-                          className="text-[1rem] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Public test result
-                        </label>
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-        </div>
+                          <label
+                            htmlFor="checkBoxFinalize"
+                            className="text-[1rem] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Public test result
+                          </label>
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="mt-2">
+                <Label>Upload students point by file: </Label>
+                <Form {...formUploadTestPoint}>
+                  <form className="mt-2">
+                    <FormField
+                      control={formUploadTestPoint.control}
+                      name="files"
+                      render={() => (
+                        <>
+                          <Dropzone
+                            multiple={false}
+                            form={formUploadTestPoint}
+                            accept={{
+                              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                                [".xlsx"],
+                              "application/vnd.ms-excel": [".xls"],
+                            }}
+                          ></Dropzone>
+                          {!isValidKeys && (
+                            <FormError>Invalid excel file structure</FormError>
+                          )}
+                          <FormDescription className=" mt-1">
+                            Excel file must contain 2 fields "Student Id" and
+                            "Point"
+                          </FormDescription>
+                        </>
+                      )}
+                    />
+                  </form>
+                </Form>
+              </div>
+            </div>
+          </form>
+        </Form>
 
         <DialogFooter>
-          <Button type="submit" form={"changeTestInfo " + test.id}>
+          <Button
+            type="submit"
+            form={"changeTestInfo " + test.id}
+            disabled={!isValidKeys}
+          >
             Confirm
           </Button>
         </DialogFooter>
@@ -514,8 +719,10 @@ function GradeTestModal({
   testId,
   isPublic,
   isOnline,
+  test,
 }: {
   name: string;
+  test: Test;
   children: ReactNode;
   doTest: DoTest;
   isPublic?: boolean;
@@ -534,7 +741,7 @@ function GradeTestModal({
     if (!setGradePartsSortable) return;
     setGradePartsSortable((oldValue) => {
       if (!oldValue || !findContainerGradePart) return;
-      const newState: GradePart[] = JSON.parse(JSON.stringify(oldValue));
+      const newState: GradePart[] = window.structuredClone(oldValue);
       const containerIndex = oldValue.findIndex(
         (el) => el.id === findContainerGradePart(testId)
       );
@@ -560,6 +767,40 @@ function GradeTestModal({
     setOpen(false);
   };
   const [open, setOpen] = useState(false);
+  ///////////////////////////////////////////////////////////////////
+  const classId = useGetClassId();
+  const queryClient = useQueryClient();
+  const receiver = test.content.receiver.find(
+    (el) => el.receiverId == doTest.studentId
+  );
+  const onPostComment = async () => {
+    if (!receiver || !commentRef.current) return;
+    await api.post("/user/class/postTestComment", {
+      postId: receiver.id,
+      content: commentRef.current.textContent,
+      classId: classId,
+    });
+    commentRef.current.textContent = "";
+  };
+  const { mutate: mutatePostComment, isPending: isPendingPostComment } =
+    useMutation({
+      mutationFn: onPostComment,
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [`Class-Grade-${classId}`],
+        });
+      },
+      onError: (error) => {
+        const err = error as MyError;
+        toast({
+          variant: "destructive",
+          title: "Uh oh! Something went wrong.",
+          description: `${err.message}`,
+        });
+      },
+    });
+  const commentRef = useRef<HTMLSpanElement>(null);
+  const sortedComment = receiver?.comments?.sort(sortByTime);
   useEffect(() => {
     form.reset();
     form.setValue("point", doTest.point ? doTest.point : undefined);
@@ -567,7 +808,7 @@ function GradeTestModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className={`${isPublic ? "sm:min-w-[800px]" : ""} `}>
+      <DialogContent className={`${isOnline ? "sm:min-w-[800px]" : ""} `}>
         <DialogHeader>
           <DialogTitle className=" text-3xl">Test: {name} </DialogTitle>
         </DialogHeader>
@@ -579,9 +820,8 @@ function GradeTestModal({
               id={"changeTestInfo " + doTest.testId + doTest.studentId}
             >
               <div
-                className={`grid ${
-                  isPublic && "grid-cols-[3fr_2fr]"
-                } gap-4 items-center  `}
+                className={`grid ${isOnline && "grid-cols-[3fr_2fr]"}
+                gap-4 items-center  `}
               >
                 <div className="flex flex-col gap-3">
                   {isPublic && (
@@ -619,25 +859,44 @@ function GradeTestModal({
                           />
                         </div>
                       ) : (
-                        <Badge variant="secondary" className="font-bold">
-                          No any pending grade review
-                        </Badge>
+                        isOnline && (
+                          <Badge variant="secondary" className="font-bold">
+                            No any pending grade review
+                          </Badge>
+                        )
                       )}
                     </div>
                   )}
-                  {isPublic && (
+
+                  {isOnline && (
                     <div className=" h-full flex-col flex gap-3">
-                      <div className="w-full min-h-[250px] h-full p-5 scrollbar-thin border-solid border-2  overflow-auto rounded-lg"></div>
+                      <div className="w-full min-h-[20rem] max-h-[20rem]  flex flex-col scrollbar-none gap-3  p-5 scrollbar-thin border-solid border-2  overflow-auto rounded-lg">
+                        {sortedComment?.map((el, i) => (
+                          <Comment key={i} commentData={el} />
+                        ))}
+                      </div>
                       <div className=" w-full  relative ">
                         <span
+                          ref={commentRef}
                           contentEditable={true}
                           role="textbox"
                           className="   border-solid border-2 p-[0.5rem] px-[1.5rem] rounded-lg block overflow-hidden w-full  "
                         />
 
-                        <span className=" absolute right-2 top-[2px]  bottom-[11px]  cursor-pointer  hover:bg-accent rounded-full p-2 ">
-                          {<SendHorizontal></SendHorizontal>}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            mutatePostComment();
+                          }}
+                          disabled={isPendingPostComment}
+                          className=" absolute flex justify-center items-center right-2 top-[10px]  bottom-[11px]  cursor-pointer   rounded-full p-2 "
+                        >
+                          {isPendingPostComment ? (
+                            <Spinner></Spinner>
+                          ) : (
+                            <SendHorizontal></SendHorizontal>
+                          )}
+                        </button>
                       </div>
                     </div>
                   )}
@@ -665,16 +924,21 @@ function GradeTestModal({
                     </div>
                   </div>
                   {isOnline && (
-                    <div className="  h-[180px]  overflow-auto  scrollbar-thin  w-full rounded-lg border-dashed border-2 flex flex-col gap-2  p-4">
-                      <div className="  flex justify-center items-center flex-col gap-1">
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
-                        <FileComponent fileKey="asdasdasd" />
+                    <div className="   overflow-auto  scrollbar-thin  w-full rounded-lg border-dashed border-2 flex flex-col gap-2  p-4">
+                      <div className="  min-h-[100px]  flex justify-center items-center flex-col gap-1">
+                        {doTest.fileKeys.length > 0 ? (
+                          doTest.fileKeys.map((key, i) => (
+                            <FileComponent
+                              fileKey={key}
+                              key={i}
+                              isTestFile={false}
+                            />
+                          ))
+                        ) : (
+                          <span className="text-sm font-bold w-full text-center">
+                            No any submission
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}

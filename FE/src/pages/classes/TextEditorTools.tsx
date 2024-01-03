@@ -52,11 +52,11 @@ export function TextEditorTools({ editor }: { editor: Editor }) {
           <FontItalicIcon className="h-4 w-4" />
         </ToggleGroupItem>
         <ToggleGroupItem
-          value="strikethrough"
-          aria-label="Toggle strikethrough"
+          value="strike"
+          aria-label="Toggle strike"
           onClick={() => editor.chain().focus().toggleStrike().run()}
           disabled={!editor.can().chain().focus().toggleStrike().run()}
-          data-state={editor.isActive("strikethrough") ? "on" : "off"}
+          data-state={editor.isActive("strike") ? "on" : "off"}
         >
           <UnderlineIcon className="h-4 w-4" />
         </ToggleGroupItem>

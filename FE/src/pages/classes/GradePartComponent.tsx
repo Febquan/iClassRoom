@@ -25,34 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-import { v4 as uuidv4 } from "uuid";
-const createtempTest = (
-  studentIds: string[],
-  sort: number,
-  gradePartId: string
-): Test => {
-  const testId = uuidv4();
-  return {
-    id: testId,
-    name: "New test",
-    scale: 0,
-    gradePartId: gradePartId,
-    sort: sort,
-    isFinalize: false,
-    isOnline: false,
-    deadLine: undefined,
-    doTest: [
-      ...studentIds.map((studentId) => ({
-        testId: testId,
-        studentId: studentId,
-        point: null,
-        fileKeys: [],
-        pendingGradeReview: false,
-      })),
-    ],
-  };
-};
-
 export function GradePartComponent({
   id,
   gradePart,
@@ -64,6 +36,7 @@ export function GradePartComponent({
   checkValidGradePartScale,
   setGradePartsSortable,
   findContainerGradePart,
+  classId,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
   id: string;
@@ -73,6 +46,7 @@ export function GradePartComponent({
   gradingMode: boolean;
   checkValidGradePartScale: boolean;
   studentIdOrder: string[] | undefined;
+  classId?: string;
   setGradePartsSortable?: Dispatch<SetStateAction<GradePart[] | undefined>>;
   findContainerGradePart?: (id: UniqueIdentifier) => string | undefined;
 }) {
@@ -99,14 +73,15 @@ export function GradePartComponent({
     if (!setGradePartsSortable) return;
     setGradePartsSortable((oldValue) => {
       if (!setGradePartsSortable || !oldValue || !studentIdOrder) return;
-      const newState = JSON.parse(JSON.stringify(oldValue));
+      const newState = window.structuredClone(oldValue);
       const containerIndex = oldValue.findIndex((el) => el.id === id);
 
       newState[containerIndex].testid.push(
         createtempTest(
           studentIdOrder,
           oldValue[containerIndex].testid.length,
-          id
+          id,
+          classId!
         )
       );
       return newState;
@@ -220,6 +195,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { UniqueIdentifier } from "@dnd-kit/core";
+import { createtempTest } from "@/ultis/classFunctions";
 
 const Schema = z
   .object({
@@ -258,7 +234,7 @@ function GratePartModal({
     if (!setGradePartsSortable) return;
     setGradePartsSortable((oldValue) => {
       if (!oldValue) return;
-      const newState: GradePart[] = JSON.parse(JSON.stringify(oldValue));
+      const newState: GradePart[] = window.structuredClone(oldValue);
       const containerIndex = oldValue.findIndex((el) => el.id === gradePart.id);
 
       newState[containerIndex].name = formData.name;

@@ -31,6 +31,8 @@ import {
 import { TestComponent } from "./TestComponent";
 import {
   checkEqual,
+  createExcel,
+  createtempGradePart,
   isSameContextObject,
   orderDoTest,
 } from "@/ultis/classFunctions";
@@ -41,51 +43,14 @@ import Spinner from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Save, PencilLine, Trash2, Plus } from "lucide-react";
 import { SearchBar } from "@/components/ui/search";
-import { v4 as uuidv4 } from "uuid";
 import api from "@/axios/axios";
 import { toast } from "@/components/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-const createtempGradePart = (
-  ClassId: string,
-  studentIds: string[],
-  sort: number
-): GradePart => {
-  const gradePartId = uuidv4();
-  const testId = uuidv4();
-  return {
-    id: gradePartId,
-    name: "New grade",
-    scale: 0,
-    classID: ClassId,
-    sort: sort,
-    testid: [
-      {
-        id: testId,
-        name: "New test",
-        scale: 1,
-        gradePartId: gradePartId,
-        sort: 0,
-        isFinalize: false,
-        isOnline: false,
-        deadLine: undefined,
-        doTest: [
-          ...studentIds.map((studentId) => ({
-            testId: testId,
-            studentId: studentId,
-            point: null,
-            fileKeys: [],
-            pendingGradeReview: false,
-          })),
-        ],
-      },
-    ],
-  };
-};
 
 export default function TeacherClassGrading() {
   const [searchValue, setSearchValue] = useState<string>("");
   const registeredStudent: string[] | undefined = useGetRegisterStudentId();
-
+  const [deleteFiles, setDeleteFiles] = useState<string[]>([]);
   const students = useGetAllStudentInClass()?.filter(
     (el) =>
       (el.student.userName.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -216,9 +181,7 @@ export default function TeacherClassGrading() {
     ) {
       setGradePartsSortable((oldGradePartState: GradePart[] | undefined) => {
         if (!oldGradePartState) return;
-        const newState: GradePart[] = JSON.parse(
-          JSON.stringify(oldGradePartState)
-        );
+        const newState: GradePart[] = window.structuredClone(oldGradePartState);
         const newContainerIndex = newState.findIndex(
           (el) => el.id === findContainerGradePart(over.id)
         );
@@ -284,9 +247,8 @@ export default function TeacherClassGrading() {
     ) {
       setGradePartsSortable((oldGradePartState: GradePart[] | undefined) => {
         if (!oldGradePartState) return;
-        const newState: GradePart[] = JSON.parse(
-          JSON.stringify(oldGradePartState)
-        );
+        const newState: GradePart[] = window.structuredClone(oldGradePartState);
+
         const containerIndex = newState.findIndex(
           (el) => el.id === findContainerGradePart(active.id)
         );
@@ -307,9 +269,8 @@ export default function TeacherClassGrading() {
     if (active.id !== over?.id && over?.id && over.id === "trashCan") {
       setGradePartsSortable((oldGradePartState: GradePart[] | undefined) => {
         if (!oldGradePartState) return;
-        let newState: GradePart[] = JSON.parse(
-          JSON.stringify(oldGradePartState)
-        );
+        let newState: GradePart[] = window.structuredClone(oldGradePartState);
+
         if (checkIsTestId(active.id)) {
           const containerIndex = newState.findIndex(
             (el) => el.id === findContainerGradePart(active.id)
@@ -319,7 +280,12 @@ export default function TeacherClassGrading() {
               (test) => test.id != active.id
             ),
           ];
-
+          const deletedFile = newState[containerIndex].testid.find(
+            (test) => test.id == active.id
+          )?.content.fileKeys;
+          if (deletedFile) {
+            setDeleteFiles((prev) => [...prev, ...deletedFile]);
+          }
           newState[containerIndex].testid = newTestState;
           return [...newState];
         }
@@ -327,6 +293,13 @@ export default function TeacherClassGrading() {
           const newTestState = newState.filter(
             (gradePart) => gradePart.id != active.id
           );
+          const deletedFile = newState
+            .find((gp) => gp.id == active.id)
+            ?.testid.map((test) => test.content.fileKeys)
+            .flat();
+          if (deletedFile) {
+            setDeleteFiles((prev) => [...prev, ...deletedFile]);
+          }
           newState = newTestState;
           return newState;
         }
@@ -340,7 +313,7 @@ export default function TeacherClassGrading() {
 
   // calculate final point
 
-  console.log(gradePartsSortable, "====================");
+  console.log(gradePartsSortable, "====================", deleteFiles);
 
   const checkValidGradePartScale = checkEqual(
     1,
@@ -366,7 +339,7 @@ export default function TeacherClassGrading() {
     );
   const validScale = checkAllTestScaleGradePart && checkValidGradePartScale;
 
-  const finalPoints = [];
+  const finalPoints: number[] = [];
   if (studentIdOrder?.length && gradePartsSortable) {
     for (let i = 0; i < studentIdOrder?.length; i++) {
       const eachStudentFinal = gradePartsSortable.map((gradePart) => {
@@ -391,7 +364,7 @@ export default function TeacherClassGrading() {
   const addNewGradePart = () => {
     setGradePartsSortable((oldValue) => {
       if (!oldValue || !classId || !studentIdOrder) return;
-      const newState: GradePart[] = JSON.parse(JSON.stringify(oldValue));
+      const newState: GradePart[] = window.structuredClone(oldValue);
 
       newState.push(
         createtempGradePart(classId, studentIdOrder, oldValue.length)
@@ -402,16 +375,70 @@ export default function TeacherClassGrading() {
   const [gradingMode, setGradingMode] = useState<boolean>(false);
 
   const onUpdateGrade = async () => {
-    await api.post("/user/class/postUpdateGrade", {
-      classId,
-      gradeParts: gradePartsSortable,
+    const filterFiles = gradePartsSortable?.map((gradePart) => ({
+      ...gradePart,
+      testid: [
+        ...gradePart.testid.map((test) => ({
+          ...test,
+          content: {
+            ...omit("files", test.content),
+          },
+        })),
+      ],
+    }));
+
+    const newSubmitedFileName = gradePartsSortable
+      ?.map((gradeParts) =>
+        gradeParts.testid
+          .map((test) =>
+            test.content.files
+              ? {
+                  testId: test.id,
+                  files: test.content.files.map((file) => file.name),
+                }
+              : undefined
+          )
+          .filter((el) => el !== undefined)
+      )
+      .flat();
+
+    const newSubmitedFile = gradePartsSortable
+      ?.map((gradeParts) =>
+        gradeParts.testid
+          .map((test) =>
+            test.content.files
+              ? {
+                  testId: test.id,
+                  files: test.content.files,
+                }
+              : undefined
+          )
+          .filter((el) => el !== undefined)
+      )
+      .flat();
+    // const deleteOldFile =
+    console.log(newSubmitedFile, JSON.stringify(newSubmitedFile), "alualaui");
+    const formData = new FormData();
+    formData.append("deleteFiles", JSON.stringify(deleteFiles));
+    formData.append("gradeParts", JSON.stringify(filterFiles));
+    if (classId) {
+      formData.append("classId", classId);
+    }
+    formData.append("testAndNewFile", JSON.stringify(newSubmitedFileName));
+
+    newSubmitedFile?.forEach((el) =>
+      el?.files.forEach((file) => formData.append("files", file))
+    );
+    console.log("LMAO", newSubmitedFile);
+    await api.post("/user/class/postUpdateGrade", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
   };
   const queryClient = useQueryClient();
   const { mutate, isPending } = useMutation({
     mutationFn: onUpdateGrade,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`Class-${classId}`] });
+      queryClient.invalidateQueries({ queryKey: [`Class-Grade-${classId}`] });
     },
     onError: (error) => {
       const err = error as MyError;
@@ -439,25 +466,36 @@ export default function TeacherClassGrading() {
           setValue={setSearchValue}
           className="w-[full] h-2"
         ></SearchBar>
-        <Button
-          disabled={!validScale || !gradingMode || isNoChange || isPending}
-          variant={!validScale ? "destructive" : "default"}
-          onClick={() => {
-            mutate();
-            setGradingMode(false);
-          }}
-        >
-          {!isPending ? (
-            <>
-              <Save size={18}></Save>
-              <span className=" ml-2">
-                {!validScale ? "Wrong Scale !" : "Save Grade"}
-              </span>{" "}
-            </>
-          ) : (
-            <Spinner />
-          )}
-        </Button>
+        <div className=" flex  gap-2 items-stretch">
+          <Button
+            className="flex-1"
+            disabled={!validScale || !gradingMode || isNoChange || isPending}
+            variant={!validScale ? "destructive" : "default"}
+            onClick={() => {
+              mutate();
+              setGradingMode(false);
+            }}
+          >
+            {!isPending ? (
+              <>
+                <Save size={18}></Save>
+                <span className=" ml-2">
+                  {!validScale ? "Wrong Scale !" : "Save Grade"}
+                </span>
+              </>
+            ) : (
+              <Spinner />
+            )}
+          </Button>
+          <Button
+            onClick={() => {
+              if (!gradePartsSortable) return;
+              createExcel(gradePartsSortable, students, finalPoints);
+            }}
+          >
+            Export excel
+          </Button>
+        </div>
       </div>
       <div className=" relative  w-full h-fit grid grid-cols-[1.5fr_8fr_0.6fr] border-solid border-[6px]  rounded-sm">
         <Col className="grid grid-cols-1 min-w-[180px] ">
@@ -532,6 +570,7 @@ export default function TeacherClassGrading() {
                         checkValidGradePartScale={checkValidGradePartScale}
                         setGradePartsSortable={setGradePartsSortable}
                         findContainerGradePart={findContainerGradePart}
+                        classId={classId}
                       ></GradePartComponent>
                     ))}
                 </SortableContext>
@@ -597,4 +636,13 @@ function TrashCan({ isdragging }: { isdragging: boolean }) {
       <Trash2 className="text-white"></Trash2>
     </div>
   );
+}
+
+function omit<T extends Record<string, unknown>>(
+  key: string,
+  obj: T
+): Omit<T, typeof key> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { [key]: omitted, ...rest } = obj;
+  return rest;
 }

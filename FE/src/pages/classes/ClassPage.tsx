@@ -28,6 +28,7 @@ import {
   useGetUserInfo,
 } from "../customhook/classCustomHooks";
 import { userToClass } from "@/ultis/appType";
+import JoinByCode from "./JoinByCode";
 
 export default function ClassPage() {
   const [activeElement, setActiveElement] = useState<userToClass>();
@@ -55,7 +56,6 @@ export default function ClassPage() {
 
     if (active.id !== over?.id) {
       queryClient.setQueryData(["userClasses"], (oldClasses: userToClass[]) => {
-        console.log(oldClasses, "asdfasdfasdfasdf");
         const arrayOfClassId = oldClasses.map((el) => el.id);
         const oldIndex = arrayOfClassId?.indexOf(active.id as string);
         const newIndex = arrayOfClassId?.indexOf(over?.id as string);
@@ -67,10 +67,12 @@ export default function ClassPage() {
   const { userInfo } = useGetUserInfo();
   const { classes, isSuccess } = useGetAllUSerClass(userInfo!.userId);
   // console.log(classes?.[0].courseId);
+
   return (
     <PageSetting>
-      <div className="flex justify-center">
+      <div className="flex justify-between">
         <SearchBar setValue={setSearch} className="w-[25rem]"></SearchBar>
+        <JoinByCode></JoinByCode>
       </div>
       <div
         className=" mt-10"

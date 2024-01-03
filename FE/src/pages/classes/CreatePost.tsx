@@ -102,7 +102,7 @@ export default function CreatePost({
   const submitPost = async (data: SchemaType) => {
     mutate(data);
   };
-
+  console.log(form.watch("files"), "23232");
   return (
     <div className="  relative flex flex-col gap-3 h-fit w-full  p-[2rem] border-solid border-2  rounded-lg">
       <div className=" flex justify-between gap-4">

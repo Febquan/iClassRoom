@@ -30,11 +30,14 @@ const rejectStyle = {
 interface DropzoneProps<T extends { files?: File[] }> {
   multiple?: boolean;
   form: UseFormReturn<T, undefined>;
+  accept?: Record<string, string[]>;
 }
 
+const MAXSIZE = 10485760; //10mb
 export default function Dropzone<T extends { files?: File[] }>({
   multiple,
   form,
+  accept,
   ...rest
 }: DropzoneProps<T>) {
   const [filesName, setFileName] = useState<string[] | undefined>([]);
@@ -48,6 +51,7 @@ export default function Dropzone<T extends { files?: File[] }>({
     [form]
   );
   const files = form.getValues().files;
+  // console.log(files, "-filessssssssssssssss", form);
   useEffect(() => {
     setFileName(files?.map((el) => el.name));
   }, [files]);
@@ -58,9 +62,12 @@ export default function Dropzone<T extends { files?: File[] }>({
     isDragAccept,
     isDragReject,
     isDragActive,
+    fileRejections,
   } = useDropzone({
     onDrop,
     multiple,
+    maxSize: MAXSIZE,
+    accept,
     ...rest,
   });
 
@@ -73,7 +80,17 @@ export default function Dropzone<T extends { files?: File[] }>({
     }),
     [isFocused, isDragAccept, isDragReject]
   );
-
+  const fileRejectionItems = fileRejections.map(({ file, errors }) => (
+    <li key={file.name}>
+      <Badge variant="destructive" className="text-[1rem] px-5 relative">
+        {errors.map((e) => (
+          <li key={e.code}>
+            {file.name} {e.message}
+          </li>
+        ))}
+      </Badge>
+    </li>
+  ));
   function cancelFile(name: string) {
     // @ts-expect-error the Path form react-hook dont work
     form.setValue("files", files?.filter((el) => el.name != name) as File[], {
@@ -92,7 +109,7 @@ export default function Dropzone<T extends { files?: File[] }>({
           (isDragActive ? (
             <p>Drop the files here ...</p>
           ) : (
-            <p>Drag 'n' drop some files here, or click to select files</p>
+            <p>Drag 'n' drop some files </p>
           ))}
       </span>
       <div>
@@ -113,6 +130,7 @@ export default function Dropzone<T extends { files?: File[] }>({
               </Badge>
             </li>
           ))}
+          {fileRejectionItems}
         </ul>
       </div>
     </div>

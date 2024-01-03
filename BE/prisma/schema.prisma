@@ -23,9 +23,10 @@ model User {
   createdAt DateTime @default(now())
   createClass Class[]
   joinClass UserClass[]
-  recievePost Post[] @relation(name:"receiver") 
+  recievePost PrivateTestPostReceiver[] @relation(name:"receiverPrivate") 
   writePost Post[] @relation(name:"author") 
   writeComment Comment[] @relation(name:"commentAuthor") 
+  writePrivateComment PrivateCommentTest[] @relation(name:"commentAuthorPrivate") 
   doTest DoTest[]
 }
 
@@ -35,10 +36,13 @@ model Class {
   className String   
   createBy String  
   createdAt DateTime @default(now())
+  joinCodeStudent String?
+  joinCodeTeacher String?
   studentExtraInfo Json?
-  creator  User  @relation(fields: [createBy],references:[id])
+  creator  User  @relation(fields: [createBy],references:[id],onDelete: Cascade)
   haveStudent UserClass[]
-  post Post[]
+  post Post[] @relation(name:"classPost") 
+  privatePost PrivateTestPostContent[] @relation(name:"classPrivatePost") 
   gradePart GradePart[]
   
 }
@@ -47,7 +51,7 @@ model UserClass {
   courseId  String
   organizeId String? 
   student   User  @relation(fields: [userId], references: [id])
-  class    Class   @relation(fields: [courseId], references: [id])
+  class    Class   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   role  Role @default(student)
   @@id([userId, courseId])
 }
@@ -89,35 +93,68 @@ model Test {
   deadLine DateTime?
   gradePart    GradePart   @relation(fields: [gradePartId], references: [id] , onDelete: Cascade)
   doTest DoTest[]
+  content PrivateTestPostContent? @relation(name: "testContent")
 }
 
 
 
 model Post {
-  id         Int        @id @default(autoincrement())
+  id         String        @id @default(uuid())
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   title      String
   content  String
   published  Boolean    @default(false)
-  isPrivate Boolean
   fileKeys  String[] 
   authorId   String
   classId  String 
-  receiverId String?
   author     User       @relation(name: "author",fields: [authorId], references: [id])
-  receiver     User?     @relation(name: "receiver",fields: [receiverId], references: [id])
-  class     Class       @relation(fields: [classId], references: [id])
+  class     Class       @relation( name: "classPost",fields: [classId], references: [id],onDelete: Cascade)
   comments Comment[] @relation(name:"commentPost") 
 }
 
 
 model Comment {
-  id         Int        @id @default(autoincrement())
+  id         String        @id @default(uuid())
   createdAt  DateTime   @default(now())
   authorId   String
   content  String
-  postId  Int
+  postId  String
   author     User       @relation(name: "commentAuthor",fields: [authorId], references: [id])
-  postComment    Post       @relation(name: "commentPost",fields: [postId], references: [id])
+  postComment    Post       @relation(name: "commentPost",fields: [postId], references: [id],onDelete: Cascade)
+}
+
+
+
+model PrivateTestPostContent {
+  id         String        @id @default(uuid())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  title      String
+  content  String
+  fileKeys  String[] 
+  classId  String 
+  testId String @unique
+  test   Test        @relation(name: "testContent", fields: [testId], references: [id] ,onDelete: Cascade)
+  class     Class       @relation(name: "classPrivatePost", fields: [classId], references: [id],onDelete: Cascade)
+  receiver PrivateTestPostReceiver[] @relation(name:"PostPrivateContent") 
+}
+model PrivateTestPostReceiver {
+  id         String        @id @default(uuid())
+  receiverId String
+  contentId String 
+  receiver     User     @relation(name: "receiverPrivate",fields: [receiverId], references: [id],onDelete: Cascade)
+  comments PrivateCommentTest[] @relation(name:"commentPrivatePost") 
+  content PrivateTestPostContent   @relation(name: "PostPrivateContent",fields: [contentId], references: [id],onDelete: Cascade)
+}
+
+
+model PrivateCommentTest {
+  id         String        @id @default(uuid())
+  createdAt  DateTime   @default(now())
+  authorId   String
+  content  String
+  postId  String
+  author     User       @relation(name: "commentAuthorPrivate",fields: [authorId], references: [id],onDelete: Cascade)
+  postComment    PrivateTestPostReceiver       @relation(name: "commentPrivatePost",fields: [postId], references: [id],onDelete: Cascade)
 }

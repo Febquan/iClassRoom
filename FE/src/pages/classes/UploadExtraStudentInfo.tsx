@@ -77,7 +77,17 @@ export default function UploadExtraStudentInfo() {
           <FormField
             control={form.control}
             name="files"
-            render={() => <Dropzone multiple={false} form={form}></Dropzone>}
+            render={() => (
+              <Dropzone
+                multiple={false}
+                accept={{
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    [".xlsx"],
+                  "application/vnd.ms-excel": [".xls"],
+                }}
+                form={form}
+              ></Dropzone>
+            )}
           />
         </form>
       </Form>

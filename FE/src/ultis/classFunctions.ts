@@ -1,7 +1,14 @@
 import api from "@/axios/axios";
-import { DoTest, ExtraTable, userToClass } from "./appType";
+import {
+  ClassToStudent,
+  DoTest,
+  ExtraTable,
+  GradePart,
+  Test,
+  userToClass,
+} from "./appType";
 import { ColumnDef, Row } from "@tanstack/react-table";
-
+import * as XLSX from "xlsx";
 export const fetchAllClass = async (userId: string) => {
   const res = await api.get(`user/class/getAllClass/${userId}`);
   const addedIndexClasses = res.data.classes.map((el: userToClass) => {
@@ -68,6 +75,17 @@ export const getFileName = (key: string) => {
   return key.substring(pos + 1);
 };
 
+export function getTestIdOfFile(filekeys: string) {
+  const start = getPosition(filekeys, "-", 2);
+  const end = getPosition(filekeys, "-", 7);
+  return filekeys.substring(start + 1, end);
+}
+export function getFileNameOfTest(filekeys: string) {
+  const start = getPosition(filekeys, "-", 7);
+
+  return filekeys.substring(start + 1);
+}
+
 export async function downloadFile(fileKey: string) {
   try {
     const response = await api.post("user/class/presignedS3Url", {
@@ -90,4 +108,112 @@ export function isSameContextObject(objectA: unknown, objectB: unknown) {
 export function isOverTime(deadLine: Date | undefined) {
   if (!deadLine) return false;
   return new Date(deadLine) < new Date();
+}
+
+export const createtempGradePart = (
+  ClassId: string,
+  studentIds: string[],
+  sort: number
+): GradePart => {
+  const gradePartId = uuidv4();
+  return {
+    id: gradePartId,
+    name: "New grade",
+    scale: 0,
+    classID: ClassId,
+    sort: sort,
+    testid: [createtempTest(studentIds, 0, gradePartId, ClassId)],
+  };
+};
+
+import { v4 as uuidv4 } from "uuid";
+export const createtempTest = (
+  studentIds: string[],
+  sort: number,
+  gradePartId: string,
+  classId: string
+): Test => {
+  const testId = uuidv4();
+  const contentId = uuidv4();
+  return {
+    id: testId,
+    name: "New test",
+    scale: 0,
+    gradePartId: gradePartId,
+    sort: sort,
+    isFinalize: false,
+    isOnline: false,
+    deadLine: undefined,
+    content: {
+      id: uuidv4(),
+      content: "",
+      title: "",
+      fileKeys: [],
+      classId: classId,
+      receiver: [
+        ...studentIds.map((studentId) => ({
+          id: uuidv4(),
+          receiverId: studentId,
+          contentId: contentId,
+          comments: [],
+        })),
+      ],
+    },
+    doTest: [
+      ...studentIds.map((studentId) => ({
+        testId: testId,
+        studentId: studentId,
+        point: null,
+        fileKeys: [],
+        pendingGradeReview: false,
+      })),
+    ],
+  };
+};
+
+export function createExcel(
+  gradePart: GradePart[],
+  students: ClassToStudent[],
+  finalPoints: number[]
+) {
+  const studentIdOrder = students?.map((student) => student.userId);
+  const data = gradePart
+    .map((gp) =>
+      gp.testid.map((test) =>
+        orderDoTest(test.doTest, studentIdOrder).map((dt, i) => ({
+          Id: students[i].organizeId,
+          Student: students[i].student.userName,
+          [gp.name + "-" + test.name]: dt.point,
+          Overall: finalPoints[i],
+        }))
+      )
+    )
+    .flat(1);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const convertedData: any = {};
+  data.forEach((entry) => {
+    entry.forEach((item) => {
+      const { Student, Id, Overall, ...grades } = item;
+      if (!convertedData[Student]) {
+        convertedData[Student] = { Id, Student, ...grades, Overall };
+      } else {
+        convertedData[Student] = { ...convertedData[Student], ...grades };
+      }
+    });
+  });
+  const temp = Object.values(convertedData);
+  if (!temp[0]) return;
+  const keys = Object.keys(temp[0]).filter(
+    (el) => el != "Id" && el != "Student" && el != "Overall"
+  );
+  console.log(keys, Object.values(convertedData));
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet(Object.values(convertedData), {
+      header: ["Id", "Student", ...keys, "Overall"],
+    }),
+    "sample"
+  );
+  XLSX.writeFile(workbook, "result.xlsx");
 }

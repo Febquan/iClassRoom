@@ -12,7 +12,7 @@ export default function PageContentItem({
   return (
     <>
       {pageContext?.classPage === tabName && (
-        <div className="w-full flex justify-center items-center">
+        <div className="w-full flex justify-center items-center ">
           {children}
         </div>
       )}

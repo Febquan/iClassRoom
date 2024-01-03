@@ -31,11 +31,6 @@ export default function Post({
 
   return (
     <div className="relative flex flex-col gap-3 h-fit w-full  border-solid border-2 p-[3rem] rounded-lg">
-      {postData.isPrivate && (
-        <div className="absolute top-10 right-10 flex gap-2">
-          <Badge>PRIVATE</Badge>
-        </div>
-      )}
       <div className="flex items-center gap-4">
         <div className="flex gap-2 items-center  ">
           <Avatar className="h-[40px] w-[42px]">

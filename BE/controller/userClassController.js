@@ -351,7 +351,25 @@ async function joinClass(role, userId, classId, studentClassId) {
           });
         })
       );
-
+      await Promise.all(
+        testIds.map(async (testId) => {
+          const content = await tx.privateTestPostContent.findUnique({
+            where: {
+              testId: testId,
+            },
+          });
+          return await tx.PrivateTestPostReceiver.create({
+            data: {
+              content: {
+                connect: { id: content.id },
+              },
+              receiver: {
+                connect: { id: userId },
+              },
+            },
+          });
+        })
+      );
       await tx.userClass.create({
         data: {
           userId: userId,
@@ -690,6 +708,7 @@ async function postUpdateGrade(req, res) {
           testid: {
             include: {
               content: true,
+              doTest: true,
             },
           },
         },
@@ -718,6 +737,7 @@ async function postUpdateGrade(req, res) {
         },
       });
 
+      ///save to database
       await Promise.all(
         gradePartsNew.map(async ({ classID, ...gradePart }) => {
           return await tx.gradePart.create({
@@ -790,6 +810,151 @@ async function postUpdateGrade(req, res) {
           });
         })
       );
+      //student in class
+      const studentInClass = await tx.userClass.findMany({
+        where: {
+          courseId: classId,
+          role: "student",
+        },
+      });
+
+      const studentIdInClass = studentInClass.map((student) => student.userId);
+
+      // notify student grade review
+      const oldDoTestId = gradePartsOld
+        .map((gp) =>
+          gp.testid.map((test) =>
+            test.doTest.map((dt) => ({
+              testName: test.name,
+              testId: dt.testId,
+              pendingGradeReview: dt.pendingGradeReview,
+              studentId: dt.studentId,
+            }))
+          )
+        )
+        .flat(2);
+      const newDoTestId = gradePartsNew
+        .map((gp) =>
+          gp.testid.map((test) =>
+            test.doTest.map((dt) => ({
+              testName: test.name,
+              testId: dt.testId,
+              pendingGradeReview: dt.pendingGradeReview,
+              studentId: dt.studentId,
+            }))
+          )
+        )
+        .flat(2);
+      const changedDoTestReviewId = newDoTestId
+        .map((doTestNew) => {
+          const doTestOld = oldDoTestId.find(
+            (doTestOld) =>
+              doTestOld.testId == doTestNew.testId &&
+              doTestOld.studentId == doTestNew.studentId
+          );
+          if (!doTestOld) return;
+          return doTestOld.pendingGradeReview !==
+            doTestNew.pendingGradeReview &&
+            doTestNew.pendingGradeReview == false
+            ? {
+                name: doTestNew.testName,
+                testId: doTestNew.testId,
+                studentId: doTestNew.studentId,
+              }
+            : undefined;
+        })
+        .filter((el) => el !== undefined);
+
+      const createNotiReviewPromises = [];
+      for (const doTest of changedDoTestReviewId) {
+        for (const studentId of studentIdInClass) {
+          if (studentId != doTest.studentId) continue;
+          const createNotiPromise = tx.noti.create({
+            data: {
+              content: `${doTest.name}: test score has just been re-evaluated !`,
+              type: "gradeReview",
+              target: doTest.testId + "-" + doTest.studentId,
+              class: {
+                connect: {
+                  id: classId,
+                },
+              },
+              user: {
+                connect: {
+                  id: studentId,
+                },
+              },
+            },
+          });
+
+          createNotiReviewPromises.push(createNotiPromise);
+        }
+      }
+
+      // notify student  grade final
+      const oldTestIdPublic = gradePartsOld
+        .map((gp) =>
+          gp.testid.map((test) => ({
+            name: test.name,
+            id: test.id,
+            isFinalize: test.isFinalize,
+          }))
+        )
+        .flat(1);
+      const newTestIdPublic = gradePartsNew
+        .map((gp) =>
+          gp.testid.map((test) => ({
+            name: test.name,
+            id: test.id,
+            isFinalize: test.isFinalize,
+          }))
+        )
+        .flat(1);
+      const changedTestPublicIds = newTestIdPublic
+        .map((testPubNew) => {
+          const oldTest = oldTestIdPublic.find(
+            (testPubOld) => testPubOld.id == testPubNew.id
+          );
+          if (!oldTest) return;
+          return oldTest.isFinalize !== testPubNew.isFinalize &&
+            testPubNew.isFinalize == true
+            ? { id: testPubNew.id, name: testPubNew.name }
+            : undefined;
+        })
+        .filter((el) => el !== undefined);
+
+      console.log(changedTestPublicIds);
+
+      const createNotiPublicPromises = [];
+
+      for (const test of changedTestPublicIds) {
+        for (const studentId of studentIdInClass) {
+          const createNotiPromise = tx.noti.create({
+            data: {
+              content: `${test.name}: test results have just been officially announced !`,
+              type: "finalizeGrade",
+              target: test.id + "-" + studentId,
+              class: {
+                connect: {
+                  id: classId,
+                },
+              },
+              user: {
+                connect: {
+                  id: studentId,
+                },
+              },
+            },
+          });
+
+          createNotiPublicPromises.push(createNotiPromise);
+        }
+      }
+
+      await Promise.all([
+        ...createNotiPublicPromises,
+        ...createNotiReviewPromises,
+      ]);
     });
 
     res.json({
@@ -928,21 +1093,143 @@ async function requestGradeReview(req, res) {
 }
 
 async function postTestComment(req, res) {
-  const { postId, content } = req.body;
+  const { postId, content, classId, testName, testId } = req.body;
   const user = req.user || req.session.user;
   const authorId = user.id;
-  await prisma.privateCommentTest.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.privateCommentTest.create({
+        data: {
+          content,
+          postComment: {
+            connect: {
+              id: postId,
+            },
+          },
+          author: {
+            connect: {
+              id: authorId,
+            },
+          },
+        },
+      });
+
+      const { role } = await tx.userClass.findFirst({
+        where: {
+          userId: authorId,
+          courseId: classId,
+        },
+      });
+      if (role == "student") {
+        const teachers = await tx.userClass.findMany({
+          where: {
+            courseId: classId,
+            role: "teacher",
+          },
+        });
+        for (teacher of teachers) {
+          await tx.noti.create({
+            data: {
+              content: `${testName}: New test review comment !`,
+              type: "gradeReviewChat",
+              target: testId + "-" + authorId,
+              class: {
+                connect: {
+                  id: classId,
+                },
+              },
+              user: {
+                connect: {
+                  id: teacher.userId,
+                },
+              },
+            },
+          });
+        }
+      }
+      if (role == "teacher") {
+        const { receiverId } = await tx.PrivateTestPostReceiver.findUnique({
+          where: {
+            id: postId,
+          },
+        });
+
+        await tx.noti.create({
+          data: {
+            content: `${testName}: New test review comment !`,
+            type: "gradeReviewChat",
+            target: testId + "-" + receiverId,
+            class: {
+              connect: {
+                id: classId,
+              },
+            },
+            user: {
+              connect: {
+                id: receiverId,
+              },
+            },
+          },
+        });
+      }
+    });
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function getUserNoti(req, res) {
+  const user = req.user || req.session.user;
+  const userId = user.id;
+  const notices = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      notis: true,
+    },
+  });
+  try {
+    res.json({
+      success: true,
+      notice: notices.notis,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function setReadNotification(req, res) {
+  const notiId = req.body.notiId;
+  await prisma.noti.update({
+    where: {
+      id: notiId,
+    },
     data: {
-      content,
-      postComment: {
-        connect: {
-          id: postId,
-        },
-      },
-      author: {
-        connect: {
-          id: authorId,
-        },
+      isUnRead: false,
+    },
+  });
+  try {
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+async function clearReadNotification(req, res) {
+  const { readNotiIds } = req.body;
+  await prisma.noti.deleteMany({
+    where: {
+      id: {
+        in: readNotiIds,
       },
     },
   });
@@ -957,6 +1244,9 @@ async function postTestComment(req, res) {
 }
 
 module.exports = {
+  clearReadNotification,
+  setReadNotification,
+  getUserNoti,
   getStudentGrade,
   postUpdateGrade,
   createClass,

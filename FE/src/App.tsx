@@ -19,6 +19,8 @@ import AccountSetting from "./pages/settings/AccountSetting.js";
 import { UserInfo } from "./ultis/appType.js";
 import EmailChangePassword from "./pages/auth/EmailChangePassword.js";
 import EmailChangeSent from "./pages/other/EmailChangeSent.js";
+
+import NewsPage from "./pages/news/NewsPage.js";
 function App() {
   // const { toast } = useToast();
 
@@ -80,13 +82,19 @@ function App() {
                   element={<SpecificClass />}
                   path="/classes/:classId/:tabPage"
                 />
+                <Route
+                  element={<SpecificClass />}
+                  path="/classes/:classId/:tabPage/:elementId"
+                />
                 <Route element={<AccountSetting />} path="/settings/account" />
+                <Route element={<NewsPage />} path="/news" />
               </Route>
 
               <Route
                 path="/emailChangeSent/:email"
                 element={<EmailChangeSent />}
               />
+
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/emailVerify/:email" element={<EmailVerify />} />
               <Route

@@ -3,6 +3,7 @@ import {
   useGetClassId,
   useGetStudentGrade,
   useGetUserInfo,
+  useNewLink,
 } from "../customhook/classCustomHooks";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +28,7 @@ import Comment from "./Comment";
 
 export default function StudentClassGrade() {
   const studentGrade = useGetStudentGrade();
-  console.log(studentGrade);
+  useNewLink(studentGrade);
   if (!studentGrade) return <Spinner></Spinner>;
   const finalGrade = studentGrade
     .map((gradePart) => {
@@ -147,7 +148,10 @@ function DoOnlineTestComponent({ test }: { test: cusTest }) {
   return (
     // </div>
     <SubmitTest test={test}>
-      <div className=" flex justify-center items-center w-full h-full">
+      <div
+        className=" flex justify-center items-center w-full h-full"
+        id={doTest.testId + "-" + doTest.studentId}
+      >
         <Card className="w-[340px] hover:scale-[1.05]  transition-transform self-center relative">
           <CardHeader>
             <CardTitle>
@@ -237,6 +241,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/use-toast";
 import api from "@/axios/axios";
+
 const Schema = z.object({
   files: z.array(z.instanceof(File)).optional(),
 });
@@ -323,6 +328,8 @@ function SubmitTest({
   const onPostComment = async () => {
     if (!commentRef.current) return;
     await api.post("/user/class/postTestComment", {
+      testName: test.name,
+      testId: test.id,
       postId: test.content.receiver[0].id,
       content: commentRef.current.textContent,
       classId: classId,

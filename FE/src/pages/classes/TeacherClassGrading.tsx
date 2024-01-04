@@ -4,6 +4,7 @@ import {
   useGetClassGrade,
   useGetClassId,
   useGetRegisterStudentId,
+  useNewLink,
 } from "../customhook/classCustomHooks";
 import { useEffect, useState } from "react";
 import { GradePart, MyError, Test } from "@/ultis/appType";
@@ -46,6 +47,7 @@ import { SearchBar } from "@/components/ui/search";
 import api from "@/axios/axios";
 import { toast } from "@/components/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
 
 export default function TeacherClassGrading() {
   const [searchValue, setSearchValue] = useState<string>("");
@@ -61,13 +63,20 @@ export default function TeacherClassGrading() {
   // const filterRegisteredStudent=
   const [activeGradePart, setActiveGradePart] = useState<GradePart>();
   const [activeTest, setActiveTest] = useState<Test>();
+  const { elementId } = useParams();
+  let a = false;
+  if (elementId) {
+    a = true;
+  }
 
+  const [gradingMode, setGradingMode] = useState<boolean>(a);
   const studentIdOrder = students?.map((student) => student.userId);
 
   const [gradePartsSortable, setGradePartsSortable] = useState<
     GradePart[] | undefined
   >(gradeParts);
 
+  useNewLink(gradePartsSortable);
   const isNoChange = isSameContextObject(gradeParts, gradePartsSortable);
   const gradePartIds = gradePartsSortable?.map((el) => el.id);
   const testIds = gradePartsSortable
@@ -372,7 +381,6 @@ export default function TeacherClassGrading() {
       return newState;
     });
   };
-  const [gradingMode, setGradingMode] = useState<boolean>(false);
 
   const onUpdateGrade = async () => {
     const filterFiles = gradePartsSortable?.map((gradePart) => ({
@@ -457,6 +465,7 @@ export default function TeacherClassGrading() {
         <Button
           variant={gradingMode ? "secondary" : "outline"}
           onClick={() => setGradingMode((prev) => !prev)}
+          id="ToggleGradingMode"
         >
           <PencilLine size={18}></PencilLine>
           <span className=" ml-2"> Toggle Grading mode </span>
@@ -467,6 +476,14 @@ export default function TeacherClassGrading() {
           className="w-[full] h-2"
         ></SearchBar>
         <div className=" flex  gap-2 items-stretch">
+          <Button
+            onClick={() => {
+              if (!gradePartsSortable) return;
+              createExcel(gradePartsSortable, students, finalPoints);
+            }}
+          >
+            Export excel
+          </Button>
           <Button
             className="flex-1"
             disabled={!validScale || !gradingMode || isNoChange || isPending}
@@ -486,14 +503,6 @@ export default function TeacherClassGrading() {
             ) : (
               <Spinner />
             )}
-          </Button>
-          <Button
-            onClick={() => {
-              if (!gradePartsSortable) return;
-              createExcel(gradePartsSortable, students, finalPoints);
-            }}
-          >
-            Export excel
           </Button>
         </div>
       </div>

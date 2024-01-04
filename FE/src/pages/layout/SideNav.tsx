@@ -17,12 +17,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useHaveUnreadNotifications } from "../customhook/classCustomHooks";
 
 type SideBarContent = {
   icon: ReactNode;
   text: string;
   alert: boolean;
   active: boolean;
+  url?: string;
   children: SideBarLink[];
 };
 type SideBarLink = {
@@ -32,57 +34,53 @@ type SideBarLink = {
   url: string;
   icon: ReactNode;
 };
-const SideBarContent: SideBarContent[] = [
-  {
-    icon: <School />,
-    text: "School",
-    alert: true,
-    active: false,
-    children: [
-      {
-        active: false,
-        text: "Classes",
-        alert: true,
-        url: "/classes",
-        icon: <LibraryBig />,
-      },
-    ],
-  },
-  {
-    icon: <Mails />,
-    text: "News",
-    alert: true,
-    active: false,
-    children: [
-      {
-        active: false,
-        text: "Classes",
-        alert: true,
-        url: "/classes",
-        icon: <LibraryBig />,
-      },
-    ],
-  },
-  {
-    icon: <Settings />,
-    text: "Settings",
-    alert: true,
-    active: false,
-    children: [
-      {
-        active: false,
-        text: "Account",
-        alert: true,
-        url: "/settings/account",
-        icon: <UserCircleIcon />,
-      },
-    ],
-  },
-];
 
 export default function SideNav() {
+  const isUnreadNotifications = useHaveUnreadNotifications();
+  const SideBarContent: SideBarContent[] = [
+    {
+      icon: <Mails />,
+      text: "News",
+      alert: isUnreadNotifications,
+      active: false,
+      url: "/news ",
+      children: [],
+    },
+    {
+      icon: <School />,
+      text: "School",
+      alert: false,
+      active: false,
+      children: [
+        {
+          active: false,
+          text: "Classes",
+          alert: false,
+          url: "/classes",
+          icon: <LibraryBig />,
+        },
+      ],
+    },
+
+    {
+      icon: <Settings />,
+      text: "Settings",
+      alert: false,
+      active: false,
+      children: [
+        {
+          active: false,
+          text: "Account",
+          alert: false,
+          url: "/settings/account",
+          icon: <UserCircleIcon />,
+        },
+      ],
+    },
+  ];
   const navigate = useNavigate();
-  const HandleNavigate = (pageUrl: string) => {
+  const HandleNavigate = (pageUrl: string | undefined) => {
+    if (!pageUrl) return;
     navigate(pageUrl);
   };
   const isOpen = useSelector((state: RootState) => state.sideBar.isOpen);
@@ -124,24 +122,29 @@ export default function SideNav() {
                 text={val.text}
                 active={val.active}
                 alert={val.alert}
+                onClick={() => {
+                  HandleNavigate(val.url);
+                }}
               ></SidebarItem>
             </AccordionTrigger>
-            <AccordionContent>
-              {val.children.map((child, j) => (
-                <div className=" flex" key={`item${i}${j}`}>
-                  <div className="w-8"></div>
-                  <SidebarItem
-                    icon={child.icon}
-                    text={child.text}
-                    active={child.active}
-                    alert={child.alert}
-                    onClick={() => {
-                      HandleNavigate(child.url);
-                    }}
-                  ></SidebarItem>
-                </div>
-              ))}
-            </AccordionContent>
+            {val.children.length > 0 && (
+              <AccordionContent>
+                {val.children.map((child, j) => (
+                  <div className=" flex" key={`item${i}${j}`}>
+                    <div className="w-8"></div>
+                    <SidebarItem
+                      icon={child.icon}
+                      text={child.text}
+                      active={child.active}
+                      alert={child.alert}
+                      onClick={() => {
+                        HandleNavigate(child.url);
+                      }}
+                    ></SidebarItem>
+                  </div>
+                ))}
+              </AccordionContent>
+            )}
           </AccordionItem>
         ))}
       </Accordion>

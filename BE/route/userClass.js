@@ -30,6 +30,9 @@ const {
   getStudentInviteCode,
   getTeacherInviteCode,
   joinByCode,
+  getUserNoti,
+  setReadNotification,
+  clearReadNotification,
 } = require("../controller/userClassController");
 
 const router = express.Router();
@@ -73,4 +76,8 @@ router.post("/submitTest", HandleMulterError, checkIsStudent, submitTest);
 router.post("/requestGradeReview", checkIsStudent, requestGradeReview);
 router.post("/postTestComment", checkIsInClass, postTestComment);
 router.post("/joinByCode", joinByCode);
+router.get("/getUserNoti", getUserNoti);
+router.post("/setReadNotification", setReadNotification);
+router.post("/clearReadNotification", clearReadNotification);
+
 module.exports = router;

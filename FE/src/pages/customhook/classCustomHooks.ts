@@ -6,6 +6,7 @@ import { ClassInfo } from "../classes/ClassPost";
 import {
   ClassToStudent,
   GradePart,
+  News,
   Role,
   UserInfo,
   userToClass,
@@ -304,4 +305,47 @@ export const useGetStudentGrade = () => {
     }
   }, [isError, toast]);
   return classGrade;
+};
+
+export const useGetUserNoti = () => {
+  const { toast } = useToast();
+  const getUserNotify = async () => {
+    const res = await api.get(`/user/class/getUserNoti`);
+    return res.data.notice;
+  };
+  const { data: news, isError } = useQuery<News[] | undefined>({
+    queryKey: [`Notifications`],
+    queryFn: getUserNotify,
+  });
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Cant request Notifications.",
+      });
+    }
+  }, [isError, toast]);
+  return news;
+};
+
+export const useHaveUnreadNotifications = () => {
+  const data = useGetUserNoti();
+  if (!data) return false;
+  return data?.filter((news) => news.isUnRead == true).length > 0;
+};
+
+export const useNewLink = (pageData: unknown) => {
+  const { elementId } = useParams();
+  const [firstClick, setFirstClick] = useState(true);
+
+  useEffect(() => {
+    if (!elementId || !pageData) return;
+    const element = document.getElementById(elementId);
+    if (element) {
+      if (!firstClick) return;
+      element.click();
+      setFirstClick(false);
+    }
+  }, [elementId, firstClick, pageData]);
 };

@@ -159,7 +159,11 @@ export function TestComponent({
                   isPublic={test.isFinalize}
                   isOnline={test.isOnline}
                 >
-                  <Button variant="secondary" className="h-5 p-2 py-3  ">
+                  <Button
+                    id={el.testId + "-" + el.studentId}
+                    variant="secondary"
+                    className="h-5 p-2 py-3  "
+                  >
                     {el.pendingGradeReview ? (
                       <AlertCircle
                         size={12}
@@ -329,7 +333,7 @@ function TestModal({
   const onChangeInfo = (formData: SchemaType) => {
     if (!setGradePartsSortable) return;
     setGradePartsSortable((oldValue) => {
-      if (!oldValue || !findContainerGradePart) return;
+      if (!oldValue || !findContainerGradePart) return oldValue;
       const newState: GradePart[] = window.structuredClone(oldValue);
       const containerIndex = oldValue.findIndex(
         (el) => el.id === findContainerGradePart(test.id)
@@ -349,9 +353,9 @@ function TestModal({
           formData.content;
       }
       newState[containerIndex].testid[testIndex].content.files = formData.files;
-
+      // return newState;
       // handle upload file
-      if (!uploadPoint || !extraInfo || !students) return;
+      if (!uploadPoint || !extraInfo || !students) return newState;
       const mapping: Record<string, string> = {};
       students.forEach(
         (student) => (mapping[student.organizeId as string] = student.userId)
@@ -740,7 +744,7 @@ function GradeTestModal({
     console.log(formData, setGradePartsSortable, "dotesttt");
     if (!setGradePartsSortable) return;
     setGradePartsSortable((oldValue) => {
-      if (!oldValue || !findContainerGradePart) return;
+      if (!oldValue || !findContainerGradePart) return oldValue;
       const newState: GradePart[] = window.structuredClone(oldValue);
       const containerIndex = oldValue.findIndex(
         (el) => el.id === findContainerGradePart(testId)
@@ -776,6 +780,8 @@ function GradeTestModal({
   const onPostComment = async () => {
     if (!receiver || !commentRef.current) return;
     await api.post("/user/class/postTestComment", {
+      testName: test.name,
+      testId: test.id,
       postId: receiver.id,
       content: commentRef.current.textContent,
       classId: classId,

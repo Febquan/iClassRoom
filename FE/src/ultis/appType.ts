@@ -1,6 +1,11 @@
 import { AxiosError } from "axios";
 import { ReactNode } from "react";
 
+export type NoticeType =
+  | "post"
+  | "gradeReview"
+  | "finalizeGrade"
+  | "gradeReviewChat";
 export type Role = "student" | "teacher";
 export type UserInfo = {
   userId: string;
@@ -8,6 +13,15 @@ export type UserInfo = {
   userName: string;
   avatar: string;
   isOauth: boolean;
+};
+export type News = {
+  id: string;
+  content: string;
+  isUnRead: boolean;
+  userId: string;
+  classId: string;
+  target: string;
+  type: NoticeType;
 };
 
 export type Class = {

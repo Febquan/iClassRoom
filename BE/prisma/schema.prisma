@@ -12,6 +12,8 @@ datasource db {
   url= env("DATABASE_URL")
 }
 
+
+
 model User {
   id       String   @id @default(uuid())
   userName String   
@@ -28,15 +30,33 @@ model User {
   writeComment Comment[] @relation(name:"commentAuthor") 
   writePrivateComment PrivateCommentTest[] @relation(name:"commentAuthorPrivate") 
   doTest DoTest[]
+  notis Noti[] @relation(name:"ClassNotiUser") 
+}
+model Noti {
+  id String @id @default(uuid())
+  content String
+  isUnRead Boolean @default(true)
+  userId String
+  classId String
+  target  String
+  type NotiType
+  class Class @relation(name:"ClassNotiClass",fields: [classId], references: [id], onDelete: Cascade)
+  user User @relation(name:"ClassNotiUser",fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum NotiType {
+  post
+  gradeReview
+  finalizeGrade
+  gradeReviewChat
+}
 
 model Class {
   id       String   @id @default(uuid())
   className String   
   createBy String  
   createdAt DateTime @default(now())
-  joinCodeStudent String?
+  joinCodeStudent String? 
   joinCodeTeacher String?
   studentExtraInfo Json?
   creator  User  @relation(fields: [createBy],references:[id],onDelete: Cascade)
@@ -44,7 +64,7 @@ model Class {
   post Post[] @relation(name:"classPost") 
   privatePost PrivateTestPostContent[] @relation(name:"classPrivatePost") 
   gradePart GradePart[]
-  
+  notis Noti[] @relation(name:"ClassNotiClass") 
 }
 model UserClass {
   userId String
@@ -55,6 +75,8 @@ model UserClass {
   role  Role @default(student)
   @@id([userId, courseId])
 }
+
+
 
 enum Role {
   teacher

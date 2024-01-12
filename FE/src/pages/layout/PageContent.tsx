@@ -59,25 +59,27 @@ export default function PageContent({
       >
         <div className="flex flex-col gap-5 w-fit overflow-hidden">
           {tabOptions.map((el, i) => {
-            return (
-              <>
-                {(role == el.role || el.role == "all") && (
-                  <div
-                    key={i}
-                    className={`flex gap-2 cursor-pointer rounded-xl p-3 transition-all  ${
-                      classPage === el.id && "bg-accent"
-                    }`}
-                    onClick={() => {
-                      setClassPage(el.id);
-                      navigate(`/classes/${classId}/${el.id}`);
-                    }}
-                  >
-                    {el.icon}
-                    <span className=" font-semibold">{el.text}</span>
-                  </div>
-                )}
-              </>
-            );
+            if (role == el.role || el.role == "all") {
+              return (
+                <div
+                  key={i}
+                  className={`flex gap-2 cursor-pointer rounded-xl p-3 transition-all  ${
+                    classPage === el.id && "bg-accent"
+                  }`}
+                  onClick={() => {
+                    setClassPage(el.id);
+                    navigate(`/classes/${classId}/${el.id}`);
+                  }}
+                >
+                  {
+                    <>
+                      {el.icon}
+                      <span className=" font-semibold">{el.text}</span>
+                    </>
+                  }
+                </div>
+              );
+            }
           })}
         </div>
         <div className=" absolute left-[-4rem] top-[50vh]">

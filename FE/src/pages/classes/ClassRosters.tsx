@@ -76,31 +76,37 @@ export default function ClassRosters() {
         <ul className=" w-full flex-col flex gap-5">
           {classOwner &&
             classOwner?.map((el, i) => (
-              <PersonDisplay
-                i={`${el.student.email}${i}`}
-                personInfo={el}
-                isClassOwner={true}
-              ></PersonDisplay>
+              <div key={i}>
+                <PersonDisplay
+                  i={`${el.student.email}${i}`}
+                  personInfo={el}
+                  isClassOwner={true}
+                ></PersonDisplay>
+              </div>
             ))}
         </ul>
         <Separator></Separator>
         <ul className=" w-full flex-col flex gap-5">
           {teachers &&
             teachers?.map((el, i) => (
-              <PersonDisplay
-                i={`${el.student.email}${i}`}
-                personInfo={el}
-              ></PersonDisplay>
+              <div key={i}>
+                <PersonDisplay
+                  i={`${el.student.email}${i}`}
+                  personInfo={el}
+                ></PersonDisplay>
+              </div>
             ))}
         </ul>
         <Separator className="mb-5"></Separator>
         <ul className=" w-full flex-col flex gap-5">
           {students &&
             students?.map((el, i) => (
-              <PersonDisplay
-                i={`${el.student.email}${i}`}
-                personInfo={el}
-              ></PersonDisplay>
+              <div key={i}>
+                <PersonDisplay
+                  i={`${el.student.email}${i}`}
+                  personInfo={el}
+                ></PersonDisplay>
+              </div>
             ))}
         </ul>
       </div>
@@ -163,21 +169,25 @@ export default function ClassRosters() {
       <ul className=" w-full flex-col flex gap-5">
         {classOwner &&
           classOwner?.map((el, i) => (
-            <PersonDisplay
-              i={`${el.student.email}${i}`}
-              personInfo={el}
-              isClassOwner={true}
-            ></PersonDisplay>
+            <div key={i}>
+              <PersonDisplay
+                i={`${el.student.email}${i}`}
+                personInfo={el}
+                isClassOwner={true}
+              ></PersonDisplay>
+            </div>
           ))}
       </ul>
       <Separator></Separator>
       <ul className=" w-full flex-col flex gap-5">
         {teachers &&
           teachers?.map((el, i) => (
-            <PersonDisplay
-              i={`${el.student.email}${i}`}
-              personInfo={el}
-            ></PersonDisplay>
+            <div key={i}>
+              <PersonDisplay
+                i={`${el.student.email}${i}`}
+                personInfo={el}
+              ></PersonDisplay>
+            </div>
           ))}
       </ul>
       <Separator className="mb-5"></Separator>

@@ -43,7 +43,7 @@ function App() {
       }
       return res.data.userInfo;
     } catch (err) {
-      // console.log(err);
+      console.log(err);
       window.location.href = `${
         import.meta.env.VITE_FRONT_END_URL
       }unauthorized`;

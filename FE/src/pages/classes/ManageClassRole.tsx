@@ -47,34 +47,40 @@ export default function ManageClassRole() {
     <div className=" w-full flex flex-col gap-5">
       <ul className=" w-full flex-col flex gap-5">
         {classOwner?.map((el, i) => (
-          <PersonDisplayEditRole
-            i={`${el.student.email}${i}`}
-            personInfo={el}
-            isClassOwner={true}
-            changeRole={changeRole}
-          ></PersonDisplayEditRole>
+          <div key={i}>
+            <PersonDisplayEditRole
+              i={`${el.student.email}${i}`}
+              personInfo={el}
+              isClassOwner={true}
+              changeRole={changeRole}
+            ></PersonDisplayEditRole>
+          </div>
         ))}
       </ul>
       <Separator></Separator>
       <ul className=" w-full flex-col flex gap-5">
         {teachers?.map((el, i) => (
-          <PersonDisplayEditRole
-            i={`${el.student.email}${i}`}
-            personInfo={el}
-            changeRole={changeRole}
-            isChange={changedUsers.includes(el.userId)}
-          ></PersonDisplayEditRole>
+          <div key={i}>
+            <PersonDisplayEditRole
+              i={`${el.student.email}${i}`}
+              personInfo={el}
+              changeRole={changeRole}
+              isChange={changedUsers.includes(el.userId)}
+            ></PersonDisplayEditRole>
+          </div>
         ))}
       </ul>
       <Separator></Separator>
       <ul className=" w-full flex-col flex gap-5">
         {students?.map((el, i) => (
-          <PersonDisplayEditRole
-            i={`${el.student.email}${i}`}
-            personInfo={el}
-            changeRole={changeRole}
-            isChange={changedUsers.includes(el.userId)}
-          ></PersonDisplayEditRole>
+          <div key={i}>
+            <PersonDisplayEditRole
+              i={`${el.student.email}${i}`}
+              personInfo={el}
+              changeRole={changeRole}
+              isChange={changedUsers.includes(el.userId)}
+            ></PersonDisplayEditRole>
+          </div>
         ))}
       </ul>
       {errorMess && <FormError>{errorMess}</FormError>}

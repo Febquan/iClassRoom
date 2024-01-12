@@ -25,7 +25,6 @@ app.use(
     cookie: {
       secure: true,
       sameSite: "none",
-      domain: "i-class-room.vercel.app",
     },
   })
 );
@@ -41,7 +40,6 @@ app.use(
 app.use(bodyParser.json());
 //Allowance
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Credentials", true);
   res.setHeader(
     "Access-Control-Allow-Methods",

@@ -47,9 +47,10 @@ function App() {
       }
       return res.data.userInfo;
     } catch (err) {
-      window.location.href = `${
-        import.meta.env.VITE_FRONT_END_URL
-      }unauthorized`;
+      console.log(err, "lmaooooooooooooooooooo");
+      // window.location.href = `${
+      //   import.meta.env.VITE_FRONT_END_URL
+      // }unauthorized`;
     }
   };
   const { isSuccess } = useQuery<UserInfo | undefined>({

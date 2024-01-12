@@ -6,19 +6,21 @@ import { useGetClassId, useGetUserInfo } from "../customhook/classCustomHooks";
 import { MyError } from "@/ultis/appType";
 import { useToast } from "@/components/ui/use-toast";
 import api from "@/axios/axios";
-import { useState } from "react";
+import { useRef } from "react";
 export default function PostComment({ postId }: { postId: string }) {
   const queryClient = useQueryClient();
   const classId = useGetClassId();
   const { toast } = useToast();
   const { userInfo } = useGetUserInfo();
-  const [commentContent, setCommentContent] = useState<string | null>("");
   const onPostComment = async () => {
+    if (!commentRef.current || commentRef.current.textContent == "") return;
     await api.post("/user/class/postComment", {
+      classId,
       postId,
       authorId: userInfo?.userId,
-      content: commentContent,
+      content: commentRef.current.textContent,
     });
+    commentRef.current.textContent = "";
   };
   const { mutate, isPending } = useMutation({
     mutationFn: onPostComment,
@@ -34,7 +36,7 @@ export default function PostComment({ postId }: { postId: string }) {
       });
     },
   });
-
+  const commentRef = useRef<HTMLSpanElement>(null);
   return (
     <div className=" flex items-center gap-2 h-fit justify-center p-1">
       <div className=" flex flex-col justify-center items-center w-fit ">
@@ -54,7 +56,7 @@ export default function PostComment({ postId }: { postId: string }) {
           role="textbox"
           className="  border-solid border-2 p-[1rem] px-[1.5rem] rounded-3xl block overflow-hidden w-full  "
           placeholder="Type your comment here."
-          onInput={(e) => setCommentContent(e.currentTarget.textContent)}
+          ref={commentRef}
         />
 
         <span

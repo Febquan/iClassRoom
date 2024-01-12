@@ -67,8 +67,11 @@ export default function StudentClassGrade() {
                   key={i}
                   className=" border-solid  min-w-[280px]  border-[2px] flex-1 justify-center flex flex-col"
                 >
-                  <div className=" h-[2.5rem] flex text-[1.2rem] font-bold   border-[1px] border-solid justify-center items-center">
+                  <div className=" h-[2.5rem] flex text-[1.2rem] font-bold gap-2   border-[1px] border-solid justify-center items-center">
                     <span>{gradePart.name}</span>
+                    <span className="text-sm  text-primary">
+                      {gradePart.scale * 100}%
+                    </span>
                   </div>
                   <div
                     className="grid   items-center justify-center w-full"
@@ -86,6 +89,9 @@ export default function StudentClassGrade() {
                             <PenLineIcon size={18} className="text-primary" />
                           )}
                           <span className="ml-1">{test.name}</span>
+                          <span className="text-sm ml-1 text-primary">
+                            {test.scale * 100}%
+                          </span>
                         </div>
                         <div className=" flex  border-[1px] justify-center items-center   h-[2.5rem]">
                           <span>
@@ -536,7 +542,7 @@ function SubmitTest({
           <div className=" h-full flex-col flex gap-3 ">
             <div className="w-full  min-h-[27rem] max-h-[27rem]  flex flex-col scrollbar-none gap-3  p-5  border-solid border-2 overflow-auto rounded-lg">
               {sortedComment.map((el, i) => (
-                <Comment key={i} commentData={el} />
+                <Comment key={i} commentData={el} isTestComment={true} />
               ))}
             </div>
             <div className=" w-full  relative ">

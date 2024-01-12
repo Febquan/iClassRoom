@@ -1,6 +1,6 @@
 import api from "@/axios/axios";
-import { useToast } from "@/components/ui/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { toast, useToast } from "@/components/ui/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ClassInfo } from "../classes/ClassPost";
 import {
@@ -348,4 +348,54 @@ export const useNewLink = (pageData: unknown) => {
       setFirstClick(false);
     }
   }, [elementId, firstClick, pageData]);
+};
+
+export const useDeletePost = () => {
+  const deletePost = async ({ postId }: { postId: string }) => {
+    await api.post("/user/class/deleteClassPost", { postId });
+  };
+  const classId = useGetClassId();
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useMutation({
+    mutationFn: deletePost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`Class-${classId}`] });
+      toast({
+        title: "Post deleted!",
+      });
+    },
+    onError: (err) => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: `${err.message}`,
+      });
+    },
+  });
+  return { mutate, isPending };
+};
+
+export const useDeleteComment = () => {
+  const deletePost = async ({ commentId }: { commentId: string }) => {
+    await api.post("/user/class/deletePostComment", { commentId });
+  };
+  const classId = useGetClassId();
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useMutation({
+    mutationFn: deletePost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`Class-${classId}`] });
+      toast({
+        title: "comment deleted!",
+      });
+    },
+    onError: (err) => {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: `${err.message}`,
+      });
+    },
+  });
+  return { mutate, isPending };
 };

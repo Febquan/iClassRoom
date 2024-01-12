@@ -9,8 +9,8 @@ const app = express();
 const https = require("https");
 const cors = require("cors");
 const passport = require("passport");
-const authMiddleware = require("./middleware/authMiddleware");
-const userAuthRoute = require("./route/userRoutes");
+const userRoute = require("./route/userRoutes");
+const adminRoute = require("./route/adminRoutes");
 const port = process.env.PORT;
 
 require("./utils/faceBookAuth.js");
@@ -29,7 +29,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [process.env.FRONTEND_URL, process.env.ADMIN_FRONTEND_URL],
     credentials: true,
   })
 );
@@ -46,7 +46,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/user", userAuthRoute);
+app.use("/user", userRoute);
+app.use("/admin", adminRoute);
 app.get("/", (req, res) => {
   console.log(req.session.user, req.user);
   res.send("hello111");

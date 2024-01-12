@@ -10,8 +10,13 @@ const {
   changePasswordEmailController,
   verify,
   sendEmailChangePasswordController,
+  changeProfile,
 } = require("../controller/userAuthController");
-const authMiddleware = require("./../middleware/authMiddleware");
+const {
+  authMiddleware,
+  isLockAccount,
+} = require("./../middleware/authMiddleware");
+const HandleMulterError = require("../middleware/handleMulter");
 const router = express.Router();
 
 router.post("/signup", signupController);
@@ -37,12 +42,27 @@ router.get(
 );
 router.post("/login", loginController);
 router.post("/logout", LogOutController);
-router.post("/changepass", authMiddleware, changePasswordController);
+router.post(
+  "/changepass",
+  authMiddleware,
+  isLockAccount,
+  changePasswordController
+);
 router.get("/autologin", autoLoginController);
 router.get("/verify", verify);
 router.post("/sendEmailChangePassword", sendEmailChangePasswordController);
-router.post("/changePasswordEmail/:emailToken", changePasswordEmailController);
+router.post(
+  "/changePasswordEmail/:emailToken",
+  isLockAccount,
+  changePasswordEmailController
+);
 
-// router.post("/changeinfo", authMiddleware, changeInfoController);
+router.post(
+  "/changeinfo",
+  authMiddleware,
+  isLockAccount,
+  HandleMulterError,
+  changeProfile
+);
 
 module.exports = router;

@@ -11,5 +11,12 @@ export default function Home() {
     }
   }, [navigate, url]);
 
-  return <div className="">home</div>;
+  return (
+    <div className="">
+      <img
+        src="https://iclassroom.s3.ap-southeast-1.amazonaws.com/public-img/1704891749709-986092079null-128400605_2781792772137993_8412963163183832126_n.png"
+        alt=""
+      />
+    </div>
+  );
 }

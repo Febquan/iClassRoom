@@ -5,29 +5,13 @@ const jwt = require("jsonwebtoken");
 const myMailer = require("../utils/mailer");
 const {
   uploadFile,
-  getFileStream,
   getS3PresignedUrl,
   s3DeleteFiles,
 } = require("./../utils/s3");
 const { deleteFile } = require("./../utils/fileManager");
-const { MulterError } = require("multer");
-const upload = require("../utils/upload");
-const { promises } = require("nodemailer/lib/xoauth2");
 
 const { nanoid } = require("nanoid");
-console.log(nanoid(11));
-function HandleMulterError(req, res, next) {
-  upload.array("files")(req, res, (err) => {
-    if (err instanceof MulterError) {
-      return res.status(400).send("File size limit exceeded");
-    } else if (err) {
-      console.error(err);
-      return res.status(500).send("Internal server error.");
-    }
 
-    next();
-  });
-}
 async function checkIsInClass(req, res, next) {
   const user = req.user || req.session.user;
   const { classId } = req.params.classId || req.body.classId;
@@ -97,13 +81,91 @@ async function checkIsClassOwner(req, res, next) {
   next();
 }
 
+async function checkIsClassActive(req, res) {
+  try {
+    const { classId } = req.body;
+
+    const resClass = await prisma.class.findFirst({
+      where: {
+        id: classId,
+      },
+    });
+    if (!resClass.isActive) {
+      throw new Error("This class is set to inactive");
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+async function deleteClassPost(req, res) {
+  try {
+    // console.log(req.files, req.body, "alaoalaoalo");
+    const { postId } = req.body;
+    const user = req.user || req.session.user;
+
+    await prisma.$transaction(async (tx) => {
+      const post = await tx.post.findUnique({
+        where: {
+          id: postId,
+        },
+      });
+      if (post.authorId != user.id) {
+        throw new Error("You are not author of this post");
+      }
+      await tx.post.delete({
+        where: {
+          id: postId,
+        },
+      });
+      if (post.fileKeys.length > 0) {
+        await s3DeleteFiles(post.fileKeys);
+      }
+      res.json({ success: true });
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+async function deletePostComment(req, res) {
+  try {
+    // console.log(req.files, req.body, "alaoalaoalo");
+    const { commentId } = req.body;
+    const user = req.user || req.session.user;
+
+    await prisma.$transaction(async (tx) => {
+      const comment = await tx.comment.findUnique({
+        where: {
+          id: commentId,
+        },
+      });
+      if (comment.authorId != user.id) {
+        throw new Error("You are not author of this comment");
+      }
+      await tx.comment.delete({
+        where: {
+          id: commentId,
+        },
+      });
+    
+      res.json({ success: true });
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+}
+
+
 async function createClassPost(req, res) {
   try {
     // console.log(req.files, req.body, "alaoalaoalo");
     const { title, description, authorId, classId } = req.body;
 
-    const fileKeys = await uploadAndGetFileKey(req.files);
-    console.log(fileKeys);
+    const fileKeys = await uploadAndGetFileKey(req.files, "class");
+
     await prisma.post.create({
       data: {
         title,
@@ -125,6 +187,7 @@ async function createClassPost(req, res) {
     res.json({ success: true });
   } catch (err) {
     console.log(err);
+    res.status(400).json({ success: false, error: error.message });
   }
 }
 async function createClass(req, res) {
@@ -698,7 +761,7 @@ async function postUpdateGrade(req, res) {
     await prisma.$transaction(async (tx) => {
       // const fileKeys = uploadAndGetFileKey()
 
-      const fileKeys = await uploadAndGetFileKey(req.files); //newfiles
+      const fileKeys = await uploadAndGetFileKey(req.files, "class"); //newfiles
 
       const gradePartsOld = await tx.gradePart.findMany({
         where: {
@@ -1044,7 +1107,7 @@ async function submitTest(req, res) {
         await s3DeleteFiles(oldFileKKeys);
       }
     }
-    const fileKeys = await uploadAndGetFileKey(req.files);
+    const fileKeys = await uploadAndGetFileKey(req.files, "class");
     await tx.doTest.update({
       where: {
         studentId_testId: {
@@ -1244,6 +1307,8 @@ async function clearReadNotification(req, res) {
 }
 
 module.exports = {
+  deletePostComment,
+  deleteClassPost,
   clearReadNotification,
   setReadNotification,
   getUserNoti,
@@ -1257,7 +1322,6 @@ module.exports = {
   getClassInviteInfo,
   getClassContent,
   createClassPost,
-  HandleMulterError,
   getS3PresignedUrlControler,
   inviteEmails,
   leaveClass,
@@ -1277,12 +1341,13 @@ module.exports = {
   getStudentInviteCode,
   getTeacherInviteCode,
   joinByCode,
+  checkIsClassActive,
 };
 
 //helper
-const uploadAndGetFileKey = async (files) => {
+const uploadAndGetFileKey = async (files, folder) => {
   const uploadPromises = files.map(async (file) => {
-    const res = await uploadFile(file);
+    const res = await uploadFile(file, folder);
     deleteFile(file.path);
     return res;
   });

@@ -1,4 +1,4 @@
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, ShieldBan } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { useDispatch } from "react-redux";
@@ -16,8 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -27,7 +25,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function NavBar({ className }: { className: string }) {
   const { data } = useQuery<UserInfo | undefined>({
     queryKey: ["userInfo"],
-    refetchOnWindowFocus: false,
+    // refetchOnWindowFocus: false,
   });
   const isLogin = useSelector((state: RootState) => state.auth.isLogin);
   const dispatch = useDispatch();
@@ -72,25 +70,34 @@ export default function NavBar({ className }: { className: string }) {
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger>
-                  <div className="flex gap-2 items-center ">
-                    <Avatar className="h-[40px] w-[42px]">
-                      <AvatarImage src={data?.avatar} alt="@shadcn" />
-                      <AvatarFallback>{data?.userName[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-[0.8rem] font-medium leading-non">
-                        {data?.userName}
-                      </span>
-                      <span className="text-[0.6rem] text-muted-foreground">
-                        {data?.email}
-                      </span>
+                  <div className="flex gap-3">
+                    <div className="flex gap-2 items-center relative  ">
+                      <Avatar className="h-[40px] w-[42px]">
+                        <AvatarImage src={data?.avatar} alt="@shadcn" />
+                        <AvatarFallback>{data?.userName[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-[0.8rem] font-medium leading-non">
+                          {data?.userName}
+                        </span>
+                        <span className="text-[0.6rem] text-muted-foreground">
+                          {data?.email}
+                        </span>
+                      </div>
+                      {data?.isLock && (
+                        <div className=" absolute bg-destructive w-full  rounded-lg px-2 opacity-90">
+                          <div className="flex flex-col justify-center items-center ">
+                            <ShieldBan size={30}></ShieldBan>
+                            <span className="text-sm font-bold">
+                              Account Locked
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     Logout
                   </DropdownMenuItem>

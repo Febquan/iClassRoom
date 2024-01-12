@@ -217,3 +217,15 @@ export function createExcel(
   );
   XLSX.writeFile(workbook, "result.xlsx");
 }
+
+export function createTemplate(header: string[]) {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet([{}], {
+      header: header,
+    }),
+    "sample"
+  );
+  XLSX.writeFile(workbook, "Template.xlsx");
+}

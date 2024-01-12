@@ -12,6 +12,14 @@ datasource db {
   url= env("DATABASE_URL")
 }
 
+model Admin {
+  id       String   @id @default(uuid())
+  userName String   @unique
+  email    String   @unique
+  password String
+  createdAt DateTime @default(now())
+}
+
 
 
 model User {
@@ -19,6 +27,7 @@ model User {
   userName String   
   email    String   @unique
   avatar    String   
+  isLock Boolean @default(false)
   password String
   isVerify Boolean  @default(false)
   isOauth Boolean @default(false)
@@ -64,13 +73,14 @@ model Class {
   post Post[] @relation(name:"classPost") 
   privatePost PrivateTestPostContent[] @relation(name:"classPrivatePost") 
   gradePart GradePart[]
-  notis Noti[] @relation(name:"ClassNotiClass") 
+  notis Noti[] @relation(name:"ClassNotiClass")
+  isActive Boolean  @default(true)
 }
 model UserClass {
   userId String
   courseId  String
   organizeId String? 
-  student   User  @relation(fields: [userId], references: [id])
+  student   User  @relation(fields: [userId], references: [id],onDelete: Cascade)
   class    Class   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   role  Role @default(student)
   @@id([userId, courseId])

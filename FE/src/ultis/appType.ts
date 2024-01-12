@@ -13,6 +13,7 @@ export type UserInfo = {
   userName: string;
   avatar: string;
   isOauth: boolean;
+  isLock: boolean;
 };
 export type News = {
   id: string;
@@ -31,6 +32,7 @@ export type Class = {
   createdAt: string;
   haveStudent: ClassToStudent[];
   studentExtraInfo: ExtraTable[];
+  isActive: boolean;
 };
 export type userToClass = {
   id: string;

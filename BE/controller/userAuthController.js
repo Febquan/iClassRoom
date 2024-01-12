@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 const myMailer = require("../utils/mailer");
+const { uploadFile, s3DeleteFiles } = require("./../utils/s3");
+const { deleteFile } = require("./../utils/fileManager");
 
 async function signupController(req, res) {
   const { userName, email, password } = req.body;
@@ -24,18 +26,32 @@ async function autoLoginController(req, res) {
         userInfo: null,
       });
     } else {
+      const userInfo = await prisma.user.findFirst({
+        where: {
+          id: user.id,
+        },
+      });
+      if (!userInfo) {
+        res.json({
+          success: false,
+          userInfo: null,
+        });
+        return;
+      }
       res.json({
         success: true,
         userInfo: {
-          userId: user.id,
-          userName: user.userName,
-          email: user.email,
-          avatar: user.avatar,
-          isOauth: user.isOauth,
+          userId: userInfo.id,
+          userName: userInfo.userName,
+          email: userInfo.email,
+          avatar: userInfo.avatar,
+          isOauth: userInfo.isOauth,
+          isLock: userInfo.isLock,
         },
       });
     }
   } catch (error) {
+    console.log(error);
     res.status(400).json({ success: false, error: error.message });
   }
 }
@@ -52,7 +68,11 @@ async function loginController(req, res) {
   const { email, password } = req.body;
   try {
     const { userInfo } = await login(email, password);
-    req.session.user = userInfo;
+    const { userId, ...rest } = userInfo;
+    req.session.user = {
+      id: userId,
+      ...rest,
+    };
     res.json({ success: true, userInfo });
   } catch (error) {
     res.status(401).json({ success: false, error: error.message });
@@ -156,6 +176,7 @@ async function login(email, password) {
     email: user.email,
     avatar: user.avatar,
     isOauth: user.isOauth,
+    isLock: user.isLock,
   };
   return { userInfo };
 }
@@ -263,6 +284,63 @@ async function changePasswordEmailController(req, res) {
   }
 }
 
+async function changeProfile(req, res) {
+  try {
+    // console.log(req.files, req.body, "alaoalaoalo");
+    const { userName } = req.body;
+    const user = req.user || req.session.user;
+    const UserId = user.id;
+    await prisma.$transaction(async (tx) => {
+      const { avatar } = await tx.user.findUnique({
+        where: {
+          id: UserId,
+        },
+        select: {
+          avatar: true,
+        },
+      });
+      const needDelete = getImgKey(avatar);
+      await s3DeleteFiles([needDelete]);
+      const urls = await uploadAndGetPublicUrl(req.files, "public-img");
+      await tx.user.update({
+        where: {
+          id: UserId,
+        },
+        data: {
+          userName: userName,
+          avatar: urls[0],
+        },
+      });
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+const uploadAndGetPublicUrl = async (files, folder) => {
+  const uploadPromises = files.map(async (file) => {
+    const res = await uploadFile(file, folder);
+    deleteFile(file.path);
+    return res;
+  });
+  const responses = await Promise.all(uploadPromises);
+  console.log(responses, "----2222s");
+  const urls = responses.map((uploadedFile) => {
+    return uploadedFile.Location;
+  });
+  return urls;
+};
+
+function getImgKey(filekeys) {
+  const start = getPosition(filekeys, "/", 3);
+
+  return filekeys.substring(start + 1);
+}
+function getPosition(string, subString, index) {
+  return string.split(subString, index).join(subString).length;
+}
+
 module.exports = {
   signupController,
   loginController,
@@ -273,4 +351,5 @@ module.exports = {
   verify,
   signUp,
   sendEmailChangePasswordController,
+  changeProfile,
 };

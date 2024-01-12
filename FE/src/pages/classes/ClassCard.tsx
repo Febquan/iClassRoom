@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 
 import { DEFAULT_TAB } from "@/ultis/appType";
+import { LockIcon } from "lucide-react";
 
 export default function ClassCard({
   id,
@@ -22,6 +23,7 @@ export default function ClassCard({
   role,
   classId2,
   // organizeId,
+  activeStatus,
   numberOfStudent,
   isOwnner,
   allStudent,
@@ -29,7 +31,7 @@ export default function ClassCard({
   id: string;
   myClassName: string;
   role: string;
-  // organizeId: string;
+  activeStatus: boolean;
   classId2: string;
   className?: string;
   numberOfStudent: number;
@@ -51,7 +53,9 @@ export default function ClassCard({
   };
   return (
     <Card
-      className={`hover:scale-[1.08]  transition-transform  ${className} h-[15rem]`}
+      className={` relative hover:scale-[1.08]  transition-transform  ${className} h-[15rem] ${
+        !activeStatus && " opacity-50"
+      }`}
       ref={setNodeRef}
       style={style}
       {...attributes}
@@ -61,6 +65,12 @@ export default function ClassCard({
         window.scrollTo(0, 0);
       }}
     >
+      {!activeStatus && (
+        <LockIcon
+          className="absolute left-[50%] top-[50%] translate-y-[-50%] translate-x-[-50%]"
+          size={100}
+        ></LockIcon>
+      )}
       <CardHeader>
         <CardTitle className="text-[2rem]">{myClassName}</CardTitle>
         <Separator></Separator>

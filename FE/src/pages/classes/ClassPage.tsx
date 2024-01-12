@@ -29,6 +29,7 @@ import {
 } from "../customhook/classCustomHooks";
 import { userToClass } from "@/ultis/appType";
 import JoinByCode from "./JoinByCode";
+import SpinPage from "@/components/ui/spin-page";
 
 export default function ClassPage() {
   const [activeElement, setActiveElement] = useState<userToClass>();
@@ -67,7 +68,7 @@ export default function ClassPage() {
   const { userInfo } = useGetUserInfo();
   const { classes, isSuccess } = useGetAllUSerClass(userInfo!.userId);
   // console.log(classes?.[0].courseId);
-
+  if (!isSuccess) return <SpinPage></SpinPage>;
   return (
     <PageSetting>
       <div className="flex justify-between">
@@ -105,7 +106,7 @@ export default function ClassPage() {
                     myClassName={items.class.className}
                     role={items.role}
                     classId2={items.courseId}
-                    // organizeId={items.organizeId}
+                    activeStatus={items.class.isActive}
                     numberOfStudent={items.class.haveStudent.length}
                     isOwnner={items.class.createBy === userInfo?.userId}
                     allStudent={items.class.haveStudent.map((student) => ({
@@ -125,6 +126,7 @@ export default function ClassPage() {
                 key={activeElement.id}
                 myClassName={activeElement.class.className}
                 role={activeElement.role}
+                activeStatus={activeElement.class.isActive}
                 // organizeId={activeElement.organizeId}
                 numberOfStudent={activeElement.class.haveStudent.length}
                 isOwnner={activeElement.class.createBy === userInfo?.userId}

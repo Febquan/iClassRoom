@@ -2,12 +2,13 @@ import PageSetting from "../layout/PageSetting";
 import News from "./News";
 import { useGetUserNoti } from "../customhook/classCustomHooks";
 import { News as NewsType } from "@/ultis/appType";
-import Spinner from "@/components/ui/spinner";
+
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/axios/axios";
+import SpinPage from "@/components/ui/spin-page";
 export default function NewsPage() {
   const data: NewsType[] | undefined = useGetUserNoti();
 
@@ -33,7 +34,7 @@ export default function NewsPage() {
       });
     },
   });
-  if (!data) return <Spinner></Spinner>;
+  if (!data) return <SpinPage></SpinPage>;
   const unread = data.filter((noti) => noti.isUnRead == true);
   const read = data.filter((noti) => noti.isUnRead == false);
   return (

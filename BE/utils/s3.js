@@ -24,13 +24,14 @@ const s3 = new S3({
 });
 
 // uploads a file to s3
-function uploadFile(file) {
+function uploadFile(file, folder) {
   const fileStream = fs.createReadStream(file.path);
 
+  // Append the folder to the Key
   const uploadParams = {
     Bucket: bucketName,
     Body: fileStream,
-    Key: file.filename,
+    Key: `${folder}/${file.filename}`,  // Add the folder here
   };
 
   return new Upload({

@@ -5,6 +5,7 @@ import { FormField } from "@/components/ui/form";
 import { useEffect, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 
+import { createTemplate } from "@/ultis/classFunctions";
 import { DataTable } from "@/components/ui/data-table";
 import FormError from "./FormError";
 import Spinner from "@/components/ui/spinner";
@@ -21,18 +22,15 @@ export default function UploadExtraStudentInfo() {
   console.log(files, "wwwww");
   const [extraInfo, setExtraInfo] = useState<ExtraTable[]>([]);
   const [isValidKeys, setIsValid] = useState<boolean>(false);
-  const [isFirstInput, setisFirstInput] = useState<boolean>(true);
   const [columns, setColumns] = useState<ColumnDef<ExtraTable>[]>([]);
   useEffect(() => {
     const reader = new FileReader();
     if (files?.length == 0 || !files) {
       setExtraInfo([]);
-      setisFirstInput(true);
       return;
     }
     reader.readAsBinaryString(files[0]);
     reader.onload = (e) => {
-      !isFirstInput && setisFirstInput(false);
       const data = e.target?.result;
       const workbook = XLSX.read(data, { type: "binary" });
       const sheetName = workbook.SheetNames[0];
@@ -45,7 +43,7 @@ export default function UploadExtraStudentInfo() {
       console.log(isValidKeys);
       setColumns(createColumnOnDynamicFields(fields));
     };
-  }, [files, isValidKeys, isFirstInput]);
+  }, [files, isValidKeys]);
 
   const queryClient = useQueryClient();
   const classId = useGetClassId();
@@ -71,7 +69,14 @@ export default function UploadExtraStudentInfo() {
     },
   });
   return (
-    <div className=" w-full flex flex-col gap-5">
+    <div className=" w-full flex flex-col  relative gap-2">
+      <Button
+        className="absolute right-2 top-[-45px]"
+        variant="ghost"
+        onClick={() => createTemplate(["Student id", "Name"])}
+      >
+        Dowload Template
+      </Button>
       <Form {...form}>
         <form>
           <FormField
@@ -96,14 +101,14 @@ export default function UploadExtraStudentInfo() {
       )}
 
       <div>
-        {!isFirstInput && !isValidKeys && (
+        {extraInfo?.length > 0 && !isValidKeys && (
           <FormError>File must have Student id field</FormError>
         )}
       </div>
       <Button
         className="mt-3"
         onClick={onExtraInfoUpload}
-        disabled={!isValidKeys}
+        disabled={!(extraInfo?.length > 0) && !isValidKeys}
       >
         {isPending ? <Spinner></Spinner> : "Change"}
       </Button>

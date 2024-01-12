@@ -48,6 +48,7 @@ import api from "@/axios/axios";
 import { toast } from "@/components/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
+import SpinPage from "@/components/ui/spin-page";
 
 export default function TeacherClassGrading() {
   const [searchValue, setSearchValue] = useState<string>("");
@@ -458,7 +459,7 @@ export default function TeacherClassGrading() {
       });
     },
   });
-  if (!students) return <Spinner></Spinner>;
+  if (!students || !gradePartsSortable) return <SpinPage></SpinPage>;
   return (
     <div className=" w-full grid grid-cols-1 gap-4">
       <div className="grid grid-cols-[1fr_2fr_1fr] gap-5 ">

@@ -27,7 +27,11 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Row } from "./MyTableAtom";
-import { orderDoTest, sortByTime } from "@/ultis/classFunctions";
+import {
+  createTemplate,
+  orderDoTest,
+  sortByTime,
+} from "@/ultis/classFunctions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Comment from "./Comment";
@@ -192,7 +196,11 @@ export function TestComponent({
                       isOnline={test.isOnline}
                       test={test}
                     >
-                      <Button variant="outline" className="h-5 p-2 py-3  ">
+                      <Button
+                        id={el.testId + "-" + el.studentId}
+                        variant="outline"
+                        className="h-5 p-2 py-3  "
+                      >
                         <>
                           {el.fileKeys.length > 0 ? (
                             <FileCheck size={16} className="text-primary" />
@@ -202,7 +210,7 @@ export function TestComponent({
                               className="text-secondary-foreground"
                             />
                           )}
-                          <span className="ml-1">UNRADED</span>
+                          <span className="ml-1">UNGRADED</span>
                         </>
                       </Button>
                     </GradeTestModal>
@@ -648,7 +656,17 @@ function TestModal({
                 />
               </div>
               <div className="mt-2">
-                <Label>Upload students point by file: </Label>
+                <div className=" flex justify-between items-center">
+                  <Label>Upload students point by file: </Label>
+                  <Button
+                    type="button"
+                    className=" right-2 top-[-45px] scale-[0.8]"
+                    variant="ghost"
+                    onClick={() => createTemplate(["Student Id", "Point"])}
+                  >
+                    Dowload Template
+                  </Button>
+                </div>
                 <Form {...formUploadTestPoint}>
                   <form className="mt-2">
                     <FormField
@@ -668,6 +686,7 @@ function TestModal({
                           {!isValidKeys && (
                             <FormError>Invalid excel file structure</FormError>
                           )}
+
                           <FormDescription className=" mt-1">
                             Excel file must contain 2 fields "Student Id" and
                             "Point"
@@ -878,7 +897,11 @@ function GradeTestModal({
                     <div className=" h-full flex-col flex gap-3">
                       <div className="w-full min-h-[20rem] max-h-[20rem]  flex flex-col scrollbar-none gap-3  p-5 scrollbar-thin border-solid border-2  overflow-auto rounded-lg">
                         {sortedComment?.map((el, i) => (
-                          <Comment key={i} commentData={el} />
+                          <Comment
+                            key={i}
+                            commentData={el}
+                            isTestComment={true}
+                          />
                         ))}
                       </div>
                       <div className=" w-full  relative ">

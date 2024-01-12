@@ -8,7 +8,6 @@ const {
   getClassInviteInfo,
   getClassContent,
   createClassPost,
-  HandleMulterError,
   getS3PresignedUrlControler,
   inviteEmails,
   leaveClass,
@@ -33,8 +32,11 @@ const {
   getUserNoti,
   setReadNotification,
   clearReadNotification,
+  checkIsClassActive,
+  deleteClassPost,
+  deletePostComment,
 } = require("../controller/userClassController");
-
+const HandleMulterError = require("../middleware/handleMulter");
 const router = express.Router();
 router.post("/createClass", createClass);
 router.get("/getAllClass/:userId", getAllUserClass);
@@ -79,5 +81,8 @@ router.post("/joinByCode", joinByCode);
 router.get("/getUserNoti", getUserNoti);
 router.post("/setReadNotification", setReadNotification);
 router.post("/clearReadNotification", clearReadNotification);
+router.post("/checkIsClassActive", checkIsClassActive);
+router.post("/deleteClassPost", deleteClassPost);
+router.post("/deletePostComment", deletePostComment);
 
 module.exports = router;

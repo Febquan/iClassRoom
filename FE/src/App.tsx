@@ -21,6 +21,8 @@ import EmailChangePassword from "./pages/auth/EmailChangePassword.js";
 import EmailChangeSent from "./pages/other/EmailChangeSent.js";
 
 import NewsPage from "./pages/news/NewsPage.js";
+import LockClass from "./ultis/LockClass.js";
+import ClassBlocked from "./pages/error/ClassBlocked.js";
 function App() {
   // const { toast } = useToast();
 
@@ -78,14 +80,17 @@ function App() {
                   element={<AcceptInvite />}
                   path="/classes/acceptinvite/:hashedClassId"
                 />
-                <Route
-                  element={<SpecificClass />}
-                  path="/classes/:classId/:tabPage"
-                />
-                <Route
-                  element={<SpecificClass />}
-                  path="/classes/:classId/:tabPage/:elementId"
-                />
+
+                <Route element={<LockClass />}>
+                  <Route
+                    element={<SpecificClass />}
+                    path="/classes/:classId/:tabPage"
+                  />
+                  <Route
+                    element={<SpecificClass />}
+                    path="/classes/:classId/:tabPage/:elementId"
+                  />
+                </Route>
                 <Route element={<AccountSetting />} path="/settings/account" />
                 <Route element={<NewsPage />} path="/news" />
               </Route>
@@ -96,6 +101,8 @@ function App() {
               />
 
               <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route path="/classBlocked" element={<ClassBlocked />} />
+
               <Route path="/emailVerify/:email" element={<EmailVerify />} />
               <Route
                 path="/emailChangePassword/:token"

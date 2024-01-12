@@ -22,7 +22,11 @@ app.use(
     secret: "cats",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true, sameSite: "none" },
+    cookie: {
+      secure: true,
+      sameSite: "none",
+      domain: "i-class-room.vercel.app",
+    },
   })
 );
 app.use(passport.initialize());

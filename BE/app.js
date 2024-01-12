@@ -29,7 +29,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL, process.env.ADMIN_FRONTEND_URL],
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   })
 );

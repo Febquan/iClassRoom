@@ -63,17 +63,17 @@ app.use((error, req, res, next) => {
   res.status(status).json({ error: message, success: false });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
-// const sslServer = https.createServer(
-//   {
-//     key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
-//     cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
-//   },
-//   app
-// );
-
-// sslServer.listen(port, () => {
-//   console.log(`Server is running on https://localhost:${port}`);
+// app.listen(port, () => {
+//   console.log(`Server is running on http://localhost:${port}`);
 // });
+const sslServer = https.createServer(
+  {
+    key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
+  },
+  app
+);
+
+sslServer.listen(port, () => {
+  console.log(`Server is running on https://localhost:${port}`);
+});

@@ -149,7 +149,7 @@ async function deletePostComment(req, res) {
           id: commentId,
         },
       });
-    
+
       res.json({ success: true });
     });
   } catch (error) {
@@ -157,7 +157,6 @@ async function deletePostComment(req, res) {
     res.status(400).json({ success: false, error: error.message });
   }
 }
-
 
 async function createClassPost(req, res) {
   try {

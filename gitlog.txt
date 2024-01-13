@@ -1,0 +1,209 @@
+commit d160a9ee4594dc13e405db9c1770f31dc17c3203
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 11:17:38 2024 +0700
+
+    deploy-14-fix-changeplatform
+
+commit ad78bfc20f9490beec016781d3273933f093c4e3
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 11:05:27 2024 +0700
+
+    deploy-13-fix-changeplatform
+
+commit 19b3ae489ee8d112a27f594001b4198b7c98acdc
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 09:40:30 2024 +0700
+
+    deploy-test-12-fix-dayjs
+
+commit 8c6a518bc2704992c4dffd788337b746391db226
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 09:40:01 2024 +0700
+
+    deploy-test-11-fix-dayjs
+
+commit 66585610072774f615fff622ca518639ccfb5951
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 04:52:09 2024 +0700
+
+    deploy-test-10-fix
+
+commit 776bf6f9a52d427bad493c595c3cf6d43d698e7b
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 04:28:55 2024 +0700
+
+    deploy-test-9-fix-upload
+
+commit 4005b93b03a30236d2ebe5c8ba9ecd2bfaef0a10
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 03:33:55 2024 +0700
+
+    deploy-test-8
+
+commit 385f3f84707f43004a6309be489a75d0cd765d10
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 03:33:16 2024 +0700
+
+    deploy-test-7
+
+commit 898a510ac47bdb90f0bbe7523e51909e3520eb15
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 03:06:46 2024 +0700
+
+    deploy-test-6
+
+commit 1e176854edcec90417cbb8b94a658985f7c9bf3a
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 02:29:53 2024 +0700
+
+    deploy-test-5
+
+commit 762d8279d4d7baada13bae1dbea8d6871779d9fb
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 01:50:12 2024 +0700
+
+    deploy-test-4
+
+commit f5530dedfb35e504940d52ed1bb0eb2e396bc591
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 01:49:56 2024 +0700
+
+    deploy-test-3
+
+commit a450ce354a35969ab0bbe25428ed71efa0e0cf25
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 01:24:43 2024 +0700
+
+    deploy-2
+
+commit c61c7d4f55993e2f8c96f231518a85aeadc05e6c
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 00:55:28 2024 +0700
+
+    deploy-1
+
+commit 00fc44837be0b9326166c7b1f261305aae5263a8
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Jan 13 00:36:37 2024 +0700
+
+    finish-development
+
+commit 372ef057f6a7e5935ffab317a75b20c89da4d2ef
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Fri Jan 5 01:50:08 2024 +0700
+
+    finish-notifications
+
+commit 26e6b3139d9766168a1c37119cc6d559a370ab6d
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Wed Jan 3 22:18:56 2024 +0700
+
+    finish-teacher-student-grading
+
+commit 05da50f055dc93363a11344634d3b83bbe24241a
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sat Dec 30 09:14:26 2023 +0700
+
+    grade-manage-student
+
+commit 6ccd1a264a1435501dacaa9ffd507c3516fc1c1f
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Thu Dec 28 01:56:40 2023 +0700
+
+    grade-manage
+
+commit 6c48a8eef93f7be4df114ba29a4ddf453935fde2
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Tue Dec 12 20:37:07 2023 +0700
+
+    manage-class-deploy-5
+
+commit f8071979e78a635101de97b27f93f81acceb6c16
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Tue Dec 12 20:34:24 2023 +0700
+
+    manage-class-deploy-4
+
+commit 1d847ab994f2ee20eeb59eec0ab98950dcfa1503
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Tue Dec 12 20:06:20 2023 +0700
+
+    manage-class-deploy-3
+
+commit ffa6cbc928a332cf8129d38062bce726fed92df1
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Tue Dec 12 20:03:55 2023 +0700
+
+    manage-class-deploy-2
+
+commit 2b582602ab6530adaf18dc62f9b4680c7c987611
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Tue Dec 12 19:35:51 2023 +0700
+
+    manage-class-deploy
+
+commit 3111bf180193986368419a51f623194cc48f1448
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Tue Dec 12 12:44:50 2023 +0700
+
+    manage-class
+
+commit bccb5488c35a1b079dac2f516d9add750b995b95
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 18:53:37 2023 +0700
+
+    'deploy-finished'
+
+commit 0e567924bf3bab6be7ee290ad143838b898423b2
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 16:41:55 2023 +0700
+
+    'fix-be-deploy'
+
+commit 25651069bdaeb4a0952424d602b5323b8ac93538
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 16:40:22 2023 +0700
+
+    'fe-deploy-fix'
+
+commit b6004ba344fbfd26d47d8d665f1b8c822dc84c5b
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 15:34:40 2023 +0700
+
+    test-http-deploy-4'
+
+commit 9b1912eb3741540eaa7d89a6b9dc154892ac957e
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 15:29:15 2023 +0700
+
+    'fix-deploy-3'
+
+commit 2f3ca854473f50355c1333055f1813b80cd969f3
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 14:44:03 2023 +0700
+
+    test-http-deploy-2'
+
+commit 07bba1b8db926c952b0da08865c1e7afdadffc69
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 14:42:24 2023 +0700
+
+    'fix-deploy-fe'
+
+commit ae65256ddb2cafbc2a70f6986555d6aa9fe69625
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 14:32:14 2023 +0700
+
+    test-http-deploy'
+
+commit 43bb87ef028063e6954112308995e44379038662
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Mon Dec 4 13:16:58 2023 +0700
+
+    'auth-and-class-add'
+
+commit 7a99bc8189d48cfaf7e29815d76a39e404281b05
+Author: Đỗ Minh Quân <febquan1@gmail.com>
+Date:   Sun Nov 26 00:09:43 2023 +0700
+
+    'add-auth-facebook-error'

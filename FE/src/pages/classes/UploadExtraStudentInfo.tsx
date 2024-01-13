@@ -108,7 +108,7 @@ export default function UploadExtraStudentInfo() {
       <Button
         className="mt-3"
         onClick={onExtraInfoUpload}
-        disabled={!(extraInfo?.length > 0) && !isValidKeys}
+        disabled={!(extraInfo?.length > 0) || !isValidKeys}
       >
         {isPending ? <Spinner></Spinner> : "Change"}
       </Button>
